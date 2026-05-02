@@ -1,6 +1,6 @@
 # BuscaMaesBot
 
-[![Version](https://img.shields.io/badge/version-0.1.0-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.2.0-orange)](CHANGELOG.md)
 
 Telegram bot that searches for a person in the Costa Rica Tribunal Supremo de Elecciones (TSE) electoral registry by name.
 

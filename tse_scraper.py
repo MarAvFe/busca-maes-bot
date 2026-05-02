@@ -217,6 +217,18 @@ async def _do_search(
     return muestra_url, BeautifulSoup(resp.text, "lxml")
 
 
+def _exact_word_score(nombre_result: str, *terms: str) -> int:
+    """Count how many search terms appear as whole words in the result name.
+
+    "mora" scores a hit in "JUAN MORA FERNANDEZ" but not in "JUAN MORALES FERNANDEZ".
+    """
+    text = nombre_result.lower()
+    return sum(
+        1 for t in terms
+        if t and re.search(r"\b" + re.escape(t.lower()) + r"\b", text)
+    )
+
+
 async def search_session(
     nombre: str, apellido1: str = "", apellido2: str = ""
 ) -> SearchSession | None:
@@ -235,6 +247,7 @@ async def search_session(
         all_results, total_raw = _parse_results_list(soup)
 
         alive = [r for r in all_results if not r.fallecido]
+        alive.sort(key=lambda r: _exact_word_score(r.nombre, nombre, apellido1, apellido2), reverse=True)
 
         return SearchSession(
             muestra_url=muestra_url,

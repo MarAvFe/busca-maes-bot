@@ -1,0 +1,9 @@
+.env
+.git
+__pycache__/
+*.py[cod]
+*.bak
+*.har
+test_scraper.py
+run.bat
+run.ps1

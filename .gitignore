@@ -1,0 +1,19 @@
+﻿# environment
+.env
+
+# python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+
+# dev artifacts
+*.bak
+*.har
+
+# editor / tooling
+.claude/
+
+# fly.io
+.fly/

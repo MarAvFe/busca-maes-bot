@@ -65,12 +65,12 @@ def _format_result(r: PersonResult) -> str:
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        f"*DiayQuién* v{VERSION}\n\n"
+        f"*BuscaMaes* v{VERSION}\n\n"
         "Envíame un nombre para buscarlo en el TSE.\n\n"
         "Ejemplos:\n"
-        "  `ignacio avila feoli`\n"
-        "  `maria jose avila`\n"
-        "  `avila feoli`\n\n"
+        "  `juan mora fernandez`\n"
+        "  `maria jose mora`\n"
+        "  `juan mora`\n\n"
         "También puedes usar /buscar seguido del nombre.",
         parse_mode="Markdown",
     )
@@ -78,7 +78,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
-        f"*DiayQuién* v{VERSION}\n\n"
+        f"*BuscaMaes* v{VERSION}\n\n"
         "*Uso:*\n"
         "Escribe un nombre (o parte del nombre) y el bot buscará en el padrón electoral del TSE.\n\n"
         "*Formato:* `nombre apellido1 apellido2`\n"

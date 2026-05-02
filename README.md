@@ -1,4 +1,4 @@
-# DiayQuién
+# BuscaMaesBot
 
 [![Version](https://img.shields.io/badge/version-0.1.0-orange)](CHANGELOG.md)
 
@@ -55,14 +55,14 @@ Send any message to the bot with a name to search. The last two words are treate
 
 | Input | nombre | apellido1 | apellido2 |
 |---|---|---|---|
-| `ignacio avila feoli` | ignacio | avila | feoli |
-| `maria jose avila feoli` | maria jose | avila | feoli |
-| `ignacio avila` | ignacio | avila | — |
+| `juan mora fernandez` | juan | mora | fernandez |
+| `maria jose mora fernandez` | maria jose | mora | fernandez |
+| `juan mora` | juan | mora | — |
 
 You can also use the `/buscar` command:
 
 ```
-/buscar ignacio avila feoli
+/buscar juan mora fernandez
 ```
 
 ### Other commands

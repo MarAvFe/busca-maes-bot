@@ -1,6 +1,14 @@
-"""Run this standalone to test the scraper without the bot."""
+"""Run this standalone to test the scraper without the bot.
+
+Usage:
+    python test_scraper.py [nombre] [apellido1] [apellido2]
+
+Example:
+    python test_scraper.py juan mora fernandez
+"""
 import asyncio
 import logging
+import sys
 
 logging.basicConfig(level=logging.WARNING)  # suppress httpx noise
 
@@ -10,8 +18,19 @@ from urllib.parse import unquote
 from tse_scraper import search_person, BASE, HEADERS, _extract_viewstate, _parse_delta
 
 
-async def dump_resultado_html():
-    """Fetch resultado_persona.aspx and print the raw HTML for parser debugging."""
+def _args() -> tuple[str, str, str]:
+    parts = sys.argv[1:]
+    if len(parts) == 0:
+        print("Usage: python test_scraper.py <nombre> [apellido1] [apellido2]")
+        sys.exit(1)
+    nombre = parts[0]
+    apellido1 = parts[1] if len(parts) > 1 else ""
+    apellido2 = parts[2] if len(parts) > 2 else ""
+    return nombre, apellido1, apellido2
+
+
+async def dump_resultado_html(nombre: str, apellido1: str, apellido2: str) -> None:
+    """Fetch resultado_persona.aspx and print raw table rows for parser debugging."""
     async with httpx.AsyncClient(headers=HEADERS, follow_redirects=True, timeout=30) as client:
         resp = await client.get(f"{BASE}/consulta_nombres.aspx")
         soup = BeautifulSoup(resp.text, "lxml")
@@ -22,9 +41,9 @@ async def dump_resultado_html():
             data={
                 "ScriptManager1": "UpdatePanel1|btnConsultarNombre",
                 **vs,
-                "txtnombre": "ignacio",
-                "txtapellido1": "avila",
-                "txtapellido2": "feoli",
+                "txtnombre": nombre,
+                "txtapellido1": apellido1,
+                "txtapellido2": apellido2,
                 "referencia": "",
                 "observacion": "",
                 "__ASYNCPOST": "true",
@@ -39,8 +58,11 @@ async def dump_resultado_html():
         )
         delta = _parse_delta(resp.text)
         redirect_path = unquote(delta.get("pageRedirect:", ""))
-        muestra_url = f"https://servicioselectorales.tse.go.cr{redirect_path}"
+        if not redirect_path:
+            print("No results found.")
+            return
 
+        muestra_url = f"https://servicioselectorales.tse.go.cr{redirect_path}"
         resp = await client.get(muestra_url)
         soup = BeautifulSoup(resp.text, "lxml")
         vs = _extract_viewstate(soup)
@@ -49,18 +71,18 @@ async def dump_resultado_html():
             muestra_url,
             data={**vs, "chk1$0": "on", "Button1": "Realizar consulta"},
         )
-        # Print the resultado_persona.aspx HTML
         soup = BeautifulSoup(resp.text, "lxml")
-        # Only print table rows so it's readable
         for tr in soup.find_all("tr"):
             cells = [td.get_text(" ", strip=True) for td in tr.find_all("td")]
             if any(cells):
                 print(cells)
 
 
-async def main():
-    print("=== Parsed result ===")
-    result = await search_person("ignacio", "avila", "feoli")
+async def main() -> None:
+    nombre, apellido1, apellido2 = _args()
+
+    print(f"=== Parsed result for: {nombre} {apellido1} {apellido2} ===")
+    result = await search_person(nombre, apellido1, apellido2)
     if result:
         print(f"Cedula:            {result.cedula}")
         print(f"Nombre:            {result.nombre}")
@@ -74,7 +96,7 @@ async def main():
         print("No result found.")
 
     print("\n=== Raw table rows from resultado_persona.aspx ===")
-    await dump_resultado_html()
+    await dump_resultado_html(nombre, apellido1, apellido2)
 
 
 asyncio.run(main())

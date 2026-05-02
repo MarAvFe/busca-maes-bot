@@ -1,4 +1,4 @@
-app = "diayquien"
+app = "busca-maes-bot"
 primary_region = "mia"  # Miami — closest to Costa Rica
 
 [build]

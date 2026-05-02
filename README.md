@@ -73,6 +73,40 @@ You can also use the `/buscar` command:
 | `/help` | Usage instructions |
 | `/buscar <name>` | Search by name |
 
+## Deploying to DigitalOcean
+
+The cheapest Droplet ($6/month, 1 vCPU / 1 GB RAM) is more than enough.
+
+**1. Create a Droplet**
+Choose Ubuntu 24.04, the $6 basic plan, and add your SSH key.
+
+**2. Install Docker on the Droplet**
+```bash
+curl -fsSL https://get.docker.com | sh
+```
+
+**3. Clone the repo and configure**
+```bash
+git clone <your-repo-url>
+cd tse_bot
+cp .env.example .env
+nano .env   # paste your BOT_TOKEN
+```
+
+**4. Run**
+```bash
+docker compose up -d --build
+```
+
+The `restart: unless-stopped` policy in `docker-compose.yml` keeps the bot alive across reboots and crashes.
+
+**Useful commands**
+```bash
+docker compose logs -f       # live logs
+docker compose pull && docker compose up -d --build   # deploy a new version
+docker compose down          # stop
+```
+
 ## Versioning
 
 This project uses [Semantic Versioning](https://semver.org/):
@@ -89,6 +123,6 @@ See [CHANGELOG.md](CHANGELOG.md) for planned features.
 
 ## Notes
 
-- Only the **first result** is returned when there are multiple matches.
+- When multiple results are found, the bot shows up to 5 choices as inline buttons, ranked by exact-word match.
 - The TSE site supports partial name matching — you can search with just a first name or just apellidos.
 - If the scraper returns empty fields after a successful search, run `test_scraper.py` with debug logging and inspect the HTML structure of `resultado_persona.aspx` to adjust `_parse_resultado` in `tse_scraper.py`.

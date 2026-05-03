@@ -115,6 +115,13 @@ These must hold at every PR:
 
 ---
 
+## Known limitations
+
+- **Audit row spam on allowlist denial.** Non-allowlisted users who spam requests generate 1 audit row per attempt. With ~100 trusted users, low risk. Mitigated by allowlist check running before rate-limit (denied users don't burn tokens). Acceptable v1.
+- **Callback clicks consume rate-limit tokens.** Each button click in multi-result selection eats 1 token. Search → 5 buttons → click = 2 tokens for 1 intent. Acceptable v1; defer callback exemption to v0.7 when usage data exists.
+
+---
+
 ## How to update this file
 
 When a milestone is shipped, check its boxes and move to `[Unreleased]` in `CHANGELOG.md` via the `/release` skill (available from M6 onwards).

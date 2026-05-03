@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
 - Vehicle plate lookup via rnpdigital.com (cars and motorcycles)
 
+## [0.6.1] - 2026-05-03
+
+### Fixed
+- **Audit query hash consistency.** `no_results` path was hashing raw input `(query, "", "")` instead of parsed decomposition, breaking audit grouping. Now hashes first decomposition like success paths.
+- **Missing `make audit` target.** CHANGELOG promised it; now available on droplet.
+- **Dev-friendly audit DB default.** Added comment in `.env.example` showing local override: `AUDIT_DB_PATH=./data/audit.db`.
+
 ## [0.6.0] - 2026-05-03
 
 ### Added

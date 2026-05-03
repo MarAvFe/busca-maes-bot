@@ -132,10 +132,12 @@ async def _do_search(update: Update, query: str) -> None:
 
     if not session or not session.results:
         logger.info("No results attempts=%d user=%s", len(decompositions), user_id)
+        # Hash first decomposition for consistency with success paths
+        nombre, apellido1, apellido2 = decompositions[0]
         await record_audit(
             user_id=user_id,
             action="search",
-            query_hash=query_hash(query, "", ""),
+            query_hash=query_hash(nombre, apellido1, apellido2),
             result="no_results",
         )
         await msg.edit_text("No se encontraron resultados para esa búsqueda.")

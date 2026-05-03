@@ -44,7 +44,7 @@ BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ
 Start the bot:
 
 ```bash
-uv run python bot.py
+uv run python -m buscamaes
 ```
 
 ## Testing

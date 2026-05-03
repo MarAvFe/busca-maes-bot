@@ -11,15 +11,14 @@ from telegram.ext import (
 from .bot.handlers import cmd_buscar, cmd_help, cmd_start, handle_callback, handle_text
 from .settings import get_settings
 
-logging.basicConfig(
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.DEBUG,  # Changed to DEBUG for better observability
-)
-logger = logging.getLogger(__name__)
-
 
 def main() -> None:
     settings = get_settings()
+    logging.basicConfig(
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+        level=settings.log_level,
+    )
+    logger = logging.getLogger(__name__)
 
     app = Application.builder().token(settings.bot_token).build()
     app.add_handler(CommandHandler("start", cmd_start))

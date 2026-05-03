@@ -77,7 +77,7 @@ def _parse_results_list(soup: BeautifulSoup) -> tuple[list[SearchResult], int]:
             continue
 
         text = label.get_text(strip=True)
-        match = re.match(r"\\d+[-\u2013]\s*(\d+)\s+(.+)", text)
+        match = re.match(r"\d+[-\u2013]\s*(\d+)\s+(.+)", text)
         if not match:
             continue
 

@@ -13,7 +13,7 @@ from .settings import get_settings
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG for better observability
 )
 logger = logging.getLogger(__name__)
 

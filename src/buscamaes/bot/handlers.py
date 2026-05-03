@@ -89,6 +89,7 @@ async def _do_search(update: Update, nombre: str, apellido1: str, apellido2: str
     assert update.effective_user is not None
     assert update.message is not None
     user_id = update.effective_user.id
+    logger.info(f"User {user_id} searching for: {nombre!r} {apellido1!r} {apellido2!r}")
     msg = await update.message.reply_text("🔍 Buscando…")
 
     try:
@@ -99,6 +100,7 @@ async def _do_search(update: Update, nombre: str, apellido1: str, apellido2: str
         return
 
     if not session or not session.results:
+        logger.info(f"No results found for user {user_id}: {nombre} {apellido1} {apellido2}")
         await msg.edit_text("No se encontraron resultados para esa búsqueda.")
         return
 

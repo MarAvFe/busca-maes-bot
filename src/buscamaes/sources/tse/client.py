@@ -37,10 +37,14 @@ async def _do_search(
 
     Returns (muestra_url, soup) or None if no results.
     """
+    logger.debug(
+        f"Starting TSE search: nombre={nombre!r}, apellido1={apellido1!r}, apellido2={apellido2!r}"
+    )
     resp = await client.get(f"{BASE}/consulta_nombres.aspx")
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "lxml")
     vs = _extract_viewstate(soup)
+    logger.debug(f"Extracted viewstate keys: {list(vs.keys())}")
 
     resp = await client.post(
         f"{BASE}/consulta_nombres.aspx",
@@ -66,17 +70,20 @@ async def _do_search(
     resp.raise_for_status()
 
     delta = _parse_delta(resp.text)
-    logger.debug("Delta keys: %s", list(delta.keys()))
+    logger.debug(f"Delta keys: {list(delta.keys())}")
 
     redirect_path = delta.get("pageRedirect:", "")
     if not redirect_path:
+        logger.info(f"No redirect found in delta for search: {nombre} {apellido1} {apellido2}")
         return None
 
     muestra_url = f"https://servicioselectorales.tse.go.cr{unquote(redirect_path)}"
+    logger.debug(f"Fetching muestra_url: {muestra_url}")
     resp = await client.get(
         muestra_url, headers={**HEADERS, "Referer": f"{BASE}/consulta_nombres.aspx"}
     )
     resp.raise_for_status()
+    logger.debug(f"Got muestra response, status={resp.status_code}")
 
     return muestra_url, BeautifulSoup(resp.text, "lxml")
 
@@ -88,17 +95,23 @@ async def search_session(
     async with httpx.AsyncClient(headers=HEADERS, follow_redirects=True, timeout=30) as client:
         found = await _do_search(client, nombre, apellido1, apellido2)
         if not found:
+            logger.warning(f"No search results found for: {nombre} {apellido1} {apellido2}")
             return None
 
         muestra_url, soup = found
         vs = _extract_viewstate(soup)
         all_results, total_raw = _parse_results_list(soup)
+        logger.info(
+            f"Parsed {len(all_results)} alive results (total_raw={total_raw}) "
+            f"for {nombre} {apellido1} {apellido2}"
+        )
 
         alive = [r for r in all_results if not r.fallecido]
         alive.sort(
             key=lambda r: _exact_word_score(r.nombre, nombre, apellido1, apellido2),
             reverse=True,
         )
+        logger.debug(f"After filtering fallecidos and sorting: {len(alive)} alive results")
 
         return SearchSession(
             muestra_url=muestra_url,

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- Family tree search: person → parents → grandparents → children → cousins (TSE)
+- Vehicle plate lookup via rnpdigital.com (cars and motorcycles)
+
+## [0.3.0] - 2026-05-03
+
 ### Added
 - `pyproject.toml` replacing `requirements.txt`; dependency management via uv with lockfile
 - `.python-version` pinning Python 3.12
@@ -17,10 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Dockerfile now uses uv for dependency installation (faster, reproducible builds)
 - README updated with uv setup instructions and improved DigitalOcean deploy guide
-
-### Planned
-- Family tree search: person → parents → grandparents → children → cousins (TSE)
-- Vehicle plate lookup via rnpdigital.com (cars and motorcycles)
+- Bot UX voice: consistent voseo Spanish (Escribí, podés, etc.)
 
 ## [0.2.0] - 2026-05-02
 

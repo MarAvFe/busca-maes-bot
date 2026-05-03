@@ -6,7 +6,7 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 
 ---
 
-## Current state (v0.6.0)
+## Current state (v0.6.2)
 
 - ✅ TSE person-name search with multiple-result selection
 - ✅ Semver + Keep-a-Changelog
@@ -17,7 +17,7 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - ✅ Security hygiene: stop logging raw queries, input validation, error sanitization
 - ✅ JSON structured logging + Sentry error tracking + correlation IDs
 - ✅ Automated git-tag releases (release.yml: tag → GH Release + GHCR image)
-- ✅ Security middleware (allowlist, rate limiting, audit log, disclaimer)
+- ✅ Security middleware (denylist + abuse detection, rate limiting, audit log)
 - ⬜ TSE upstream resilience (retries, circuit breaker)
 - ⬜ Claude Code tooling (CLAUDE.md, skills, agents, hooks)
 - ⬜ Vehicle plate registry integration
@@ -66,11 +66,12 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - [x] Docker Compose healthcheck (process-level via pgrep)
 - [x] GitHub Actions release workflow: tag → extract CHANGELOG section → GH Release + GHCR image
 
-### M4 — Security middleware ✅ `v0.6.0`
-- [x] Telegram user ID allowlist (`ALLOWLIST_USER_IDS` env var, fail-closed)
-- [x] Per-user rate limiting (in-memory token bucket)
-- [x] SQLite audit log (`/data/audit.db`) — stores query hashes, not raw text; 90-day retention
-- [x] Misuse disclaimer in `/start` and `/help`
+### M4 — Security middleware ✅ `v0.6.2`
+- [x] Denylist + abuse detection (everyone access default; auto-deny >20 req/day)
+- [x] Per-user rate limiting (in-memory token bucket, 10 req/60s)
+- [x] SQLite audit log (`/data/audit.db`) — stores query hashes only; 90-day retention
+- [x] Persistent denied_users table for abuse quarantine
+- [x] Daily counter (in-memory, UTC midnight reset)
 - (Input validation already shipped in M2.6)
 
 ### M5 — Resilience ⬜ `v0.7.0`
@@ -117,8 +118,8 @@ These must hold at every PR:
 
 ## Known limitations
 
-- **Audit row spam on allowlist denial.** Non-allowlisted users who spam requests generate 1 audit row per attempt. With ~100 trusted users, low risk. Mitigated by allowlist check running before rate-limit (denied users don't burn tokens). Acceptable v1.
-- **Callback clicks consume rate-limit tokens.** Each button click in multi-result selection eats 1 token. Search → 5 buttons → click = 2 tokens for 1 intent. Acceptable v1; defer callback exemption to v0.7 when usage data exists.
+- **Callback clicks consume rate-limit + daily quota.** Each button click is a separate update → token + daily count. Search → 5 buttons → click = 2 quota units for 1 intent. Threshold=20 req/day = ~10 searches/day. Acceptable v1; defer callback exemption to M5 when usage data exists.
+- **Denylist requires manual SQL recovery.** Operator auto-denied at threshold needs raw `sqlite3 /data/audit.db "DELETE FROM denied_users WHERE user_id=X"`. No operator bypass list yet. Acceptable for single-operator bot.
 
 ---
 

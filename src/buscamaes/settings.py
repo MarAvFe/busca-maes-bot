@@ -12,17 +12,12 @@ class Settings:
             raise RuntimeError("BOT_TOKEN not set. Create a .env file with BOT_TOKEN=...")
         self.log_level = os.getenv("LOG_LEVEL", "INFO").upper()
 
-        # Allowlist: comma-separated Telegram user IDs. Empty = deny all (fail-closed).
-        raw_allow = os.getenv("ALLOWLIST_USER_IDS", "").strip()
-        self.allowlist: frozenset[int] = (
-            frozenset(int(x) for x in raw_allow.split(",") if x.strip())
-            if raw_allow
-            else frozenset()
-        )
-
         # Rate limit: N requests per WINDOW seconds, per user.
         self.rate_limit_max: int = int(os.getenv("RATE_LIMIT_MAX", "10"))
         self.rate_limit_window: int = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
+
+        # Abuse detection: auto-deny if user exceeds threshold requests per day (UTC).
+        self.daily_abuse_threshold: int = int(os.getenv("DAILY_ABUSE_THRESHOLD", "20"))
 
         # Audit DB path. /data is the docker volume mount.
         self.audit_db_path: str = os.getenv("AUDIT_DB_PATH", "/data/audit.db")

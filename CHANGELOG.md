@@ -11,6 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
 - Vehicle plate lookup via rnpdigital.com (cars and motorcycles)
 
+## [0.6.2] - 2026-05-03
+
+### Changed
+- **Allowlist → denylist + abuse detection.** Removed `ALLOWLIST_USER_IDS` env var (everyone access default now). Added `DAILY_ABUSE_THRESHOLD` (default 20 req/day). Users exceeding threshold auto-denied via persistent `denied_users` table in audit DB.
+- **@requires_auth decorator removed.** Merged into `@rate_limited`: denial check → token bucket → abuse check.
+- **Misuse disclaimer removed** from `/start` and `/help` (trust model now implicit).
+- Removed `src/buscamaes/security/allowlist.py` and `tests/test_allowlist.py`.
+
+### Added
+- **Daily counter (in-memory)** in `rate_limit.py`. Resets at UTC midnight, restart-amnesty acceptable.
+- **Denylist persistence** in `storage/audit.py`: `denied_users` table with `deny_user()`, `is_denied()`, `_list_denied()`.
+- **Abuse detection** in decorators: if daily count >threshold → `deny_user()` + audit `auth_denied` with result `abuse_threshold`.
+- `tests/test_denylist.py` — 3 tests (deny insert, is_denied true/false, idempotent).
+- `tests/test_abuse_detection.py` — 2 tests (under threshold no deny, over threshold deny + DB row).
+
+### Upgrade notes
+- Drop `ALLOWLIST_USER_IDS` from `.env` (optional `DAILY_ABUSE_THRESHOLD` if non-default).
+- Existing audit DB auto-migrates: `CREATE TABLE IF NOT EXISTS denied_users` on init.
+- All existing users (no prior denial) access bot immediately.
+- No data loss; audit log unchanged.
+
 ## [0.6.1] - 2026-05-03
 
 ### Fixed

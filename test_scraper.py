@@ -12,10 +12,12 @@ import sys
 
 logging.basicConfig(level=logging.WARNING)  # suppress httpx noise
 
+from urllib.parse import unquote
+
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import unquote
-from tse_scraper import search_person, BASE, HEADERS, _extract_viewstate, _parse_delta
+
+from tse_scraper import BASE, HEADERS, _extract_viewstate, _parse_delta, search_person
 
 
 def _args() -> tuple[str, str, str]:

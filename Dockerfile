@@ -1,10 +1,12 @@
 FROM python:3.12-slim
 
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
 
 COPY bot.py tse_scraper.py VERSION ./
 
-CMD ["python", "bot.py"]
+CMD ["uv", "run", "python", "bot.py"]

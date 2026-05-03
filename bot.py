@@ -1,11 +1,11 @@
 import logging
 import os
 import time
-from pathlib import Path
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -16,9 +16,9 @@ from telegram.ext import (
 )
 
 from tse_scraper import (
+    TSE_SEARCH_URL,
     PersonResult,
     SearchSession,
-    TSE_SEARCH_URL,
     search_session,
     select_from_session,
 )
@@ -122,7 +122,8 @@ def _choices_header(session: SearchSession, nombre: str, apellido1: str, apellid
     lines = [f"*{total} resultado(s)* para *{query}*"]
     if filtered:
         lines.append(f"_{filtered} fallecido(s) ocultado(s)_")
-    lines.append(f"\nMostrando los primeros {min(alive, MAX_CHOICES)}. Seleccioná uno o refiná la búsqueda:")
+    shown = min(alive, MAX_CHOICES)
+    lines.append(f"\nMostrando los primeros {shown}. Seleccioná uno o refiná la búsqueda:")
     return "\n".join(lines)
 
 
@@ -147,7 +148,8 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         f"*BuscaMaes* v{VERSION}\n\n"
         "*Uso:*\n"
-        "Escribe un nombre (o parte del nombre) y el bot buscará en el padrón electoral del TSE.\n\n"
+        "Escribe un nombre (o parte del nombre) y el bot buscará"
+        " en el padrón electoral del TSE.\n\n"
         "*Formato:* `nombre apellido1 apellido2`\n"
         "  - El último token es el segundo apellido\n"
         "  - El penúltimo es el primer apellido\n"

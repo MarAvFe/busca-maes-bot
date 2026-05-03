@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `pyproject.toml` replacing `requirements.txt`; dependency management via uv with lockfile
+- `.python-version` pinning Python 3.12
+- Initial test suite (pytest): name parsing, session expiry, VERSION format
+- GitHub Actions CI: lint (ruff), type check (mypy), tests (pytest) on every PR and push to main
+- GOALS.md capturing the long-term SDLC roadmap
+
+### Changed
+- Dockerfile now uses uv for dependency installation (faster, reproducible builds)
+- README updated with uv setup instructions and improved DigitalOcean deploy guide
+
 ### Planned
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
 - Vehicle plate lookup via rnpdigital.com (cars and motorcycles)

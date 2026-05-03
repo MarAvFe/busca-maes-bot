@@ -1,12 +1,14 @@
 import logging
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from telegram import Update
 from telegram.ext import ContextTypes
 
+from .. import __version__
+from ..logging_utils import query_hash
 from ..sources.tse import SearchSession, search_session, select_from_session
+from ..validation import sanitize_user_error
 from .formatting import (
     _build_choices_keyboard,
     _choices_header,
@@ -42,16 +44,10 @@ def _pop_session(user_id: int):
     return pending.session
 
 
-def _get_version() -> str:
-    version_file = Path(__file__).parent.parent.parent.parent / "VERSION"
-    return version_file.read_text().strip()
-
-
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.message is not None
-    version = _get_version()
     await update.message.reply_text(
-        f"*BuscaMaes* v{version}\n\n"
+        f"*BuscaMaes* v{__version__}\n\n"
         "Envíame un nombre para buscarlo en el TSE.\n\n"
         "Ejemplos:\n"
         "  `juan mora fernandez`\n"
@@ -64,9 +60,8 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.message is not None
-    version = _get_version()
     await update.message.reply_text(
-        f"*BuscaMaes* v{version}\n\n"
+        f"*BuscaMaes* v{__version__}\n\n"
         "*Uso:*\n"
         "Escribí un nombre (o parte del nombre) y el bot buscará"
         " en el padrón electoral del TSE.\n\n"
@@ -97,14 +92,21 @@ async def _do_search(update: Update, query: str) -> None:
     used_decomposition = None
 
     for i, (nombre, apellido1, apellido2) in enumerate(decompositions):
-        logger.debug(f"User {user_id} attempt {i + 1}: {nombre!r} {apellido1!r} {apellido2!r}")
+        logger.debug(
+            "User=%s attempt=%d query=%s",
+            user_id,
+            i + 1,
+            query_hash(nombre, apellido1, apellido2),
+        )
         try:
             session = await search_session(nombre, apellido1, apellido2)
             if session and session.results:
                 used_decomposition = (nombre, apellido1, apellido2)
                 logger.info(
-                    f"User {user_id} got results (attempt {i + 1}): "
-                    f"{nombre!r} {apellido1!r} {apellido2!r}"
+                    "User=%s got results attempt=%d query=%s",
+                    user_id,
+                    i + 1,
+                    query_hash(nombre, apellido1, apellido2),
                 )
                 break
         except Exception:
@@ -112,7 +114,7 @@ async def _do_search(update: Update, query: str) -> None:
             # Continue to next decomposition
 
     if not session or not session.results:
-        logger.info(f"No results after {len(decompositions)} attempt(s) for user {user_id}")
+        logger.info("No results attempts=%d user=%s", len(decompositions), user_id)
         await msg.edit_text("No se encontraron resultados para esa búsqueda.")
         return
 
@@ -129,7 +131,7 @@ async def _do_search(update: Update, query: str) -> None:
             person = await select_from_session(session, session.results[0].index)
         except Exception as e:
             logger.exception("Select failed")
-            await msg.edit_text(f"❌ Error al obtener el detalle: {e}")
+            await msg.edit_text(f"❌ {sanitize_user_error(e)}")
             return
 
         if not person:
@@ -174,7 +176,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             person = await select_from_session(session, index)
         except Exception as e:
             logger.exception("select_from_session failed")
-            await query.edit_message_text(f"❌ Error al obtener el detalle: {e}")
+            await query.edit_message_text(f"❌ {sanitize_user_error(e)}")
             return
 
         if not person:

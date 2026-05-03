@@ -1,6 +1,6 @@
 # BuscaMaesBot
 
-[![Version](https://img.shields.io/badge/version-0.4.0-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.1-orange)](CHANGELOG.md)
 
 Telegram bot that searches for a person in the Costa Rica Tribunal Supremo de Elecciones (TSE) electoral registry by name.
 
@@ -44,7 +44,7 @@ BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ
 Start the bot:
 
 ```bash
-uv run python bot.py
+uv run python -m buscamaes
 ```
 
 ## Testing

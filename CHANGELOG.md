@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
 - Vehicle plate lookup via rnpdigital.com (cars and motorcycles)
 
+## [0.4.1] - 2026-05-03
+
+### Security
+- **Stop logging raw user names.** All TSE search log lines now emit `query_hash` (16-char sha256) instead of `nombre`/`apellido` values, restoring GOALS.md key invariant #1.
+- `LOG_LEVEL` env var (default `INFO`) replaces hardcoded `DEBUG` in `__main__.py`. Add `LOG_LEVEL=DEBUG` to `.env` for local debugging.
+- Errors shown to users now flow through `sanitize_user_error()` instead of leaking raw exception strings.
+
+### Added
+- `src/buscamaes/logging_utils.py` with `query_hash()` helper.
+- `tests/test_tse_parser.py` — 8 tests covering `_extract_viewstate`, `_parse_delta`, `_parse_results_list` (regression for commit 0b62237), `_parse_resultado`.
+- `tests/test_validation.py` — 10 tests covering `validate_name_query` and `sanitize_user_error`.
+
+### Changed
+- All `logger.debug(f"...")` / `logger.info(f"...")` calls converted to `%`-style formatting (lazy evaluation).
+- `cmd_start` / `cmd_help` use `buscamaes.__version__` instead of walking the filesystem to find VERSION.
+
+### Removed
+- Backward-compat shims `bot.py` and `tse_scraper.py` at repo root. These imported via `from src.buscamaes…` which only worked from the repo root and not from any installed context. Use `python -m buscamaes` (already the Docker entrypoint).
+
 ## [0.4.0] - 2026-05-03
 
 ### Added

@@ -18,7 +18,8 @@ from urllib.parse import unquote
 import httpx
 from bs4 import BeautifulSoup
 
-from tse_scraper import BASE, HEADERS, _extract_viewstate, _parse_delta, search_person
+from buscamaes.sources.tse.client import BASE, HEADERS, search_person
+from buscamaes.sources.tse.parser import _extract_viewstate, _parse_delta
 
 
 def _args() -> tuple[str, str, str]:

@@ -42,6 +42,7 @@ SESSION_TTL = 300  # seconds before a pending search expires
 # In-memory pending search store
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PendingSearch:
     session: SearchSession
@@ -68,6 +69,7 @@ def _pop_session(user_id: int) -> SearchSession | None:
 # ---------------------------------------------------------------------------
 # Formatting helpers
 # ---------------------------------------------------------------------------
+
 
 def _parse_name_input(text: str) -> tuple[str, str, str]:
     parts = text.strip().split()
@@ -130,6 +132,7 @@ def _choices_header(session: SearchSession, nombre: str, apellido1: str, apellid
 # ---------------------------------------------------------------------------
 # Command handlers
 # ---------------------------------------------------------------------------
+
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
@@ -258,6 +261,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     if not BOT_TOKEN:

@@ -22,7 +22,7 @@ HEADERS = {
 
 @dataclass
 class SearchResult:
-    index: int       # 0-based position → used as chk1$N
+    index: int  # 0-based position → used as chk1$N
     cedula: str
     nombre: str
     fallecido: bool = False
@@ -33,8 +33,8 @@ class SearchSession:
     muestra_url: str
     viewstate: dict
     cookies: dict[str, str]
-    results: list[SearchResult]      # alive results only (fallecidos filtered)
-    total_raw: int                   # total count before filter
+    results: list[SearchResult]  # alive results only (fallecidos filtered)
+    total_raw: int  # total count before filter
 
 
 @dataclass
@@ -228,10 +228,7 @@ def _exact_word_score(nombre_result: str, *terms: str) -> int:
     "mora" scores a hit in "JUAN MORA FERNANDEZ" but not in "JUAN MORALES FERNANDEZ".
     """
     text = nombre_result.lower()
-    return sum(
-        1 for t in terms
-        if t and re.search(r"\b" + re.escape(t.lower()) + r"\b", text)
-    )
+    return sum(1 for t in terms if t and re.search(r"\b" + re.escape(t.lower()) + r"\b", text))
 
 
 async def search_session(

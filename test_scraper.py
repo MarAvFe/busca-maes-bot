@@ -6,6 +6,7 @@ Usage:
 Example:
     python test_scraper.py juan mora fernandez
 """
+
 import asyncio
 import logging
 import sys

@@ -135,6 +135,7 @@ def _choices_header(session: SearchSession, nombre: str, apellido1: str, apellid
 
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     await update.message.reply_text(
         f"*BuscaMaes* v{VERSION}\n\n"
         "Envíame un nombre para buscarlo en el TSE.\n\n"
@@ -148,6 +149,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     await update.message.reply_text(
         f"*BuscaMaes* v{VERSION}\n\n"
         "*Uso:*\n"
@@ -169,6 +171,8 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def _do_search(update: Update, nombre: str, apellido1: str, apellido2: str) -> None:
+    assert update.effective_user is not None
+    assert update.message is not None
     user_id = update.effective_user.id
     msg = await update.message.reply_text("🔍 Buscando…")
 
@@ -208,6 +212,9 @@ async def _do_search(update: Update, nombre: str, apellido1: str, apellido2: str
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
+    assert query is not None
+    assert query.data is not None
+    assert update.effective_user is not None
     await query.answer()
     user_id = update.effective_user.id
 
@@ -242,6 +249,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def cmd_buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     query = " ".join(context.args) if context.args else ""
     if not query:
         await update.message.reply_text("Uso: /buscar <nombre> [apellido1] [apellido2]")
@@ -251,6 +259,8 @@ async def cmd_buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
+    assert update.message.text is not None
     nombre, apellido1, apellido2 = _parse_name_input(update.message.text)
     if not nombre:
         await update.message.reply_text("Por favor ingrese al menos un nombre.")

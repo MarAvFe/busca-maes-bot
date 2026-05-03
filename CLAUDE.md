@@ -45,6 +45,57 @@ Revocation list for instant logout (security > pure stateless)
 
 ---
 
+#### Opus is FORBIDDEN from writing:
+- ❌ Full file contents (raw code)
+- ❌ Exact Edit/Write tool calls or arguments
+- ❌ Line-by-line code diffs
+- ❌ Step-by-step "do this then this" sequences
+- ❌ old_string/new_string blocks
+- ❌ Prescriptive implementation plans (Step 1: ..., Step 2: ...)
+- ❌ Exact function signatures with bodies (only skeleton in spec)
+- ❌ Detailed test expectations (only test coverage goals)
+
+**ENFORCEMENT:** If a draft spec exceeds ~100 lines or contains code blocks larger than 5 lines, STOP. Use EnterPlanMode only for design decisions, NOT for implementation roadmaps. A spec is: **files + function names + signatures (params/return only) + decisions + why.** Implementation is Haiku's job.
+
+**Red flags:** "old_string", "new_string", numbered steps with edits, "replace entire file", tool call parameters. If you see these, the spec is implementation, not design.
+
+**Example: correct spec (~50 lines)**
+```
+M4 Design — Allowlist + Rate Limit
+
+Goal: Prevent casual misuse via deny-list and per-user quota.
+
+Architecture:
+Middleware stack: correlation_id → allowlist → rate_limit → validate → handler → audit
+Order: deny-listed users must not consume bucket.
+
+Allowlist:
+- ALLOWLIST_USER_IDS env var (comma-separated user IDs)
+- Empty = deny all (fail-closed)
+- Function: is_allowed(user_id: int) -> bool
+
+Rate Limit:
+- Token bucket: default 10 req/60s per user
+- In-memory (restart = reset)
+- Function: check_and_consume(user_id, max, window) -> bool
+
+Files:
+- src/buscamaes/security/allowlist.py — is_allowed()
+- src/buscamaes/security/rate_limit.py — check_and_consume()
+- src/buscamaes/security/decorators.py — @requires_auth, @rate_limited
+
+Modify:
+- handlers.py: decorate all handlers with @requires_auth, @rate_limited
+- settings.py: add allowlist + rate_limit config
+- __main__.py: wire decorator imports
+
+Testing:
+- Allowlist: monkeypatch get_settings(), test empty vs. populated
+- Rate limit: mock time.monotonic() for refill test
+```
+
+This is good. Code skeleton only, no full file contents, no prescriptive steps.
+
 ### Haiku (Implementation)
 **When to use:**
 - Implementing from Opus specs
@@ -70,9 +121,10 @@ Revocation list for instant logout (security > pure stateless)
 ## Workflow
 
 ### New Feature
-1. **Opus:** Design the feature (spec only)
-2. **Haiku:** Implement per spec
-3. **Opus:** Review implementation
+1. **Opus:** Design the feature (spec only) → use `ExitPlanMode` to request approval
+2. **User:** Reviews and approves plan before implementation starts
+3. **Haiku:** Implement per spec
+4. **Opus:** Review implementation
 
 ### Bug Fix
 - Simple: Haiku directly
@@ -80,6 +132,23 @@ Revocation list for instant logout (security > pure stateless)
 
 ### Refactor
 - Haiku (following existing patterns)
+
+---
+
+## Plan Mode Enforcement
+
+**Opus uses `EnterPlanMode` for architectural decisions.** When a spec is ready:
+1. Call `ExitPlanMode` to signal completion (triggers user approval gate)
+2. User reviews the plan in `.claude/plans/`
+3. User approves or requests changes
+4. Only after approval: Haiku implements
+
+**Hook enforcement:** `.claude/hooks/plan-spec-enforcer.js` blocks any Write to `plans/*` that:
+- Exceeds 100 lines
+- Contains code blocks > 5 lines
+- Contains `old_string`/`new_string`, step sequences, or "replace entire file"
+
+If the hook blocks, the spec is too implementation-heavy. Haiku's job, not Opus's.
 
 ---
 

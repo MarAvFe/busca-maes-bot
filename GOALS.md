@@ -30,6 +30,11 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - [x] pytest with initial test suite
 - [x] GitHub Actions CI: lint / typecheck / test on every PR and push to main
 
+### M1.5 — Release policy ⬜ `v0.3.0`
+- [ ] README version badge updated to match VERSION file
+- [ ] Release procedure documented in CONTRIBUTING.md
+- [ ] Tool caches (.mypy_cache, .ruff_cache, .pytest_cache) added to .gitignore
+
 ### M2 — Code restructure ⬜ `v0.4.0`
 - [ ] Reorganize into `src/buscamaes/{bot,sources/tse,storage,resilience}/`
 - [ ] `Container` dataclass for dependency injection

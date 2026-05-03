@@ -9,15 +9,14 @@ from telegram.ext import (
 )
 
 from .bot.handlers import cmd_buscar, cmd_help, cmd_start, handle_callback, handle_text
+from .observability import configure_logging, configure_sentry
 from .settings import get_settings
 
 
 def main() -> None:
     settings = get_settings()
-    logging.basicConfig(
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        level=settings.log_level,
-    )
+    configure_logging(settings.log_level)
+    sentry_on = configure_sentry()
     logger = logging.getLogger(__name__)
 
     assert settings.bot_token is not None
@@ -28,7 +27,7 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(handle_callback))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
-    logger.info("Bot started")
+    logger.info("Bot started", extra={"sentry_enabled": sentry_on})
     app.run_polling(drop_pending_updates=True)
 
 

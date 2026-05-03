@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
 - Vehicle plate lookup via rnpdigital.com (cars and motorcycles)
 
+## [0.5.0] - 2026-05-03
+
+### Added
+- **JSON structured logging** via python-json-logger. Format: `{timestamp, level, logger, message, correlation_id, ...}`
+- **Per-request correlation IDs** via `contextvars.ContextVar`. Set at `cmd_buscar` / `handle_text` / `handle_callback` entrypoints. Injected onto every `LogRecord` via `CorrelationIdFilter`.
+- **Sentry integration** (sentry-sdk 2.18.0), gated on `SENTRY_DSN` env var. PII off, no performance traces. Release tag = `buscamaes@<version>`.
+- `src/buscamaes/observability.py` — correlation ID management, JSON logging config, Sentry init.
+- Docker Compose healthcheck (process-level `pgrep`, 30s interval).
+- Dockerfile installs `procps` for healthcheck.
+- `tests/test_observability.py` — 4 tests (CID generation, filter, JSON output format).
+
+### Changed
+- `release.yml`: replaced archived `actions/create-release@v1` with `softprops/action-gh-release@v2`.
+- CHANGELOG extractor: `awk` → `sed`. Handles last-version edge case correctly.
+- `.env.example` documents `SENTRY_DSN` (optional).
+
 ## [0.4.2] - 2026-05-03
 
 ### Fixed

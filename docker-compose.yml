@@ -3,3 +3,9 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'python -m buscamaes' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s

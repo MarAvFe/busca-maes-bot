@@ -7,6 +7,7 @@ from telegram.ext import ContextTypes
 
 from .. import __version__
 from ..logging_utils import query_hash
+from ..observability import new_correlation_id
 from ..sources.tse import SearchSession, search_session, select_from_session
 from ..validation import sanitize_user_error, validate_name_query
 from .formatting import (
@@ -155,6 +156,7 @@ async def _do_search(update: Update, query: str) -> None:
 
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    new_correlation_id()
     query = update.callback_query
     assert query is not None
     assert query.data is not None
@@ -193,6 +195,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def cmd_buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    new_correlation_id()
     assert update.message is not None
     query = " ".join(context.args) if context.args else ""
     if not query:
@@ -202,6 +205,7 @@ async def cmd_buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    new_correlation_id()
     assert update.message is not None
     assert update.message.text is not None
     if not update.message.text.strip():

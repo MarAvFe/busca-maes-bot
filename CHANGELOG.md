@@ -11,6 +11,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
 - Vehicle plate lookup via rnpdigital.com (cars and motorcycles)
 
+## [0.4.2] - 2026-05-03
+
+### Fixed
+- **Input validation was dead code.** `validate_name_query()` existed but was never called from handlers. Wired it into `_do_search()` so queries are checked for length, charset, and emptiness before hitting the scraper.
+- **`__version__` breaks when package is installed as wheel.** Switched from Path-walking to `importlib.metadata.version()` so it reads from package metadata instead of a filesystem file that isn't bundled in wheels.
+- **Test environment coupling.** `settings.py` ran `load_dotenv()` at import time, forcing all tests to set `BOT_TOKEN` env var. Moved `load_dotenv()` into `Settings.__init__()` and cached `get_settings()` with `@lru_cache` so env is loaded on demand, not at import.
+
+### Changed
+- Test files now use absolute imports (`from buscamaes…`) instead of mixed `from src.buscamaes…` form. Dropped `os.environ.setdefault("BOT_TOKEN", …)` boilerplate.
+- Cleaned up empty placeholder packages: deleted `storage/`, emptied `bot/__init__.py` and `sources/__init__.py` (no public API exports yet).
+- Removed dead `[tool.ruff.lint.per-file-ignores]` entry for deleted `test_scraper.py`.
+- One residual f-string logger call (`logger.exception(f"…")`) converted to lazy `%`-style.
+
 ## [0.4.1] - 2026-05-03
 
 ### Security

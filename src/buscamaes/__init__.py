@@ -1,6 +1,5 @@
-from pathlib import Path
+from importlib.metadata import version
 
-_version_file = Path(__file__).parent.parent.parent / "VERSION"
-__version__ = _version_file.read_text().strip()
+__version__ = version("busca-maes-bot")
 
 __all__ = ["__version__"]

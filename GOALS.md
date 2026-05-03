@@ -6,7 +6,7 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 
 ---
 
-## Current state (v0.4.1)
+## Current state (v0.4.2)
 
 - ✅ TSE person-name search with multiple-result selection
 - ✅ Semver + Keep-a-Changelog
@@ -50,6 +50,15 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - [x] Add unit tests for scraper parsers (18 new tests, 33 total)
 - [x] Wire sanitize_user_error() into error paths
 - [x] LOG_LEVEL env var, default INFO (not DEBUG)
+
+### M2.6 — M2 audit cleanup ✅ `v0.4.2`
+- [x] Wire `validate_name_query()` into handlers (was dead code)
+- [x] Switch `__version__` to `importlib.metadata` (path-walk breaks in wheels)
+- [x] Fix test import coupling: `settings.py` ran `load_dotenv()` at import time
+- [x] Standardize test imports: absolute `from buscamaes…` vs. mixed `from src.buscamaes…`
+- [x] Delete empty `storage/` placeholder package
+- [x] Clean up `pyproject.toml` (dead per-file-ignores)
+- [x] Empty `bot/__init__.py` and `sources/__init__.py` (no public API exports yet)
 
 ### M3 — Observability + release automation ⬜ `v0.5.0`
 - [ ] JSON structured logging with per-request correlation IDs

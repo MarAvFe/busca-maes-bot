@@ -42,9 +42,6 @@ line-length = 100
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "ASYNC", "S"]
 ignore = ["S101"]  # allow assert in tests
 
-[tool.ruff.lint.per-file-ignores]
-"test_scraper.py" = ["E402"]  # legacy manual test; replaced in PR #2
-
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"
 testpaths = ["tests"]

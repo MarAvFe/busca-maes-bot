@@ -139,7 +139,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "  `juan mora fernandez`\n"
         "  `maria jose mora`\n"
         "  `mora fernandez`\n\n"
-        "También puedes usar /buscar seguido del nombre.",
+        "También podés usar /buscar seguido del nombre.",
         parse_mode="Markdown",
     )
 
@@ -148,7 +148,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text(
         f"*BuscaMaes* v{VERSION}\n\n"
         "*Uso:*\n"
-        "Escribe un nombre (o parte del nombre) y el bot buscará"
+        "Escribí un nombre (o parte del nombre) y el bot buscará"
         " en el padrón electoral del TSE.\n\n"
         "*Formato:* `nombre apellido1 apellido2`\n"
         "  - El último token es el segundo apellido\n"

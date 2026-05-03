@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 from .. import __version__
 from ..logging_utils import query_hash
 from ..observability import new_correlation_id
-from ..security.decorators import rate_limited, requires_auth
+from ..security.decorators import rate_limited
 from ..sources.tse import SearchSession, search_session, select_from_session
 from ..storage.audit import record_audit
 from ..validation import sanitize_user_error, validate_name_query
@@ -47,7 +47,6 @@ def _pop_session(user_id: int):
     return pending.session
 
 
-@requires_auth
 @rate_limited
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.message is not None
@@ -58,21 +57,16 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "  `juan mora fernandez`\n"
         "  `maria jose mora`\n"
         "  `mora fernandez`\n\n"
-        "También podés usar /buscar seguido del nombre.\n\n"
-        "_Esta herramienta consulta registros públicos. El uso indebido"
-        " es responsabilidad del usuario._",
+        "También podés usar /buscar seguido del nombre.",
         parse_mode="Markdown",
     )
 
 
-@requires_auth
 @rate_limited
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.message is not None
     await update.message.reply_text(
         f"*BuscaMaes* v{__version__}\n\n"
-        "_Esta herramienta consulta registros públicos. El uso indebido"
-        " es responsabilidad del usuario._\n\n"
         "*Uso:*\n"
         "Escribí un nombre (o parte del nombre) y el bot buscará"
         " en el padrón electoral del TSE.\n\n"
@@ -185,7 +179,6 @@ async def _do_search(update: Update, query: str) -> None:
     await msg.edit_text(header, parse_mode="Markdown", reply_markup=keyboard)
 
 
-@requires_auth
 @rate_limited
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     new_correlation_id()
@@ -226,7 +219,6 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await query.edit_message_text(_format_person(person), parse_mode="Markdown")
 
 
-@requires_auth
 @rate_limited
 async def cmd_buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     new_correlation_id()
@@ -238,7 +230,6 @@ async def cmd_buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await _do_search(update, query)
 
 
-@requires_auth
 @rate_limited
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     new_correlation_id()

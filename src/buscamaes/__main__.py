@@ -44,10 +44,7 @@ def main() -> None:
     app.add_handler(CallbackQueryHandler(handle_callback))  # type: ignore[arg-type]
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))  # type: ignore[arg-type]
 
-    logger.info(
-        "Bot started",
-        extra={"sentry_enabled": sentry_on, "allowlist_size": len(settings.allowlist)},
-    )
+    logger.info("Bot started", extra={"sentry_enabled": sentry_on})
     app.run_polling(drop_pending_updates=True)
 
 

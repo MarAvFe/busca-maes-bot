@@ -32,6 +32,11 @@ CREATE TABLE IF NOT EXISTS audit (
 );
 CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit(ts);
 CREATE INDEX IF NOT EXISTS idx_audit_user ON audit(user_id);
+CREATE TABLE IF NOT EXISTS denied_users (
+    user_id INTEGER PRIMARY KEY,
+    reason TEXT NOT NULL,
+    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 _conn: aiosqlite.Connection | None = None
@@ -104,6 +109,51 @@ async def cleanup_loop() -> None:
         except Exception:
             logger.exception("Cleanup loop iteration failed")
         await asyncio.sleep(24 * 60 * 60)
+
+
+async def deny_user(user_id: int, reason: str) -> None:
+    """Add user to denylist (persistent). No-op if already denied."""
+    if _conn is None:
+        return
+    try:
+        await _conn.execute(
+            "INSERT OR IGNORE INTO denied_users (user_id, reason) VALUES (?, ?)",
+            (user_id, reason),
+        )
+        await _conn.commit()
+    except Exception:
+        logger.exception("Deny user failed user_id=%d", user_id)
+
+
+async def is_denied(user_id: int) -> bool:
+    """Check if user is in denylist."""
+    if _conn is None:
+        return False
+    try:
+        cur = await _conn.execute(
+            "SELECT 1 FROM denied_users WHERE user_id = ?",
+            (user_id,),
+        )
+        row = await cur.fetchone()
+        await cur.close()
+        return row is not None
+    except Exception:
+        logger.exception("Denied check failed user_id=%d", user_id)
+        return False
+
+
+async def _list_denied() -> list[int]:
+    """Operator helper: list all denied user IDs."""
+    if _conn is None:
+        return []
+    try:
+        cur = await _conn.execute("SELECT user_id FROM denied_users ORDER BY added_at DESC")
+        rows: Any = await cur.fetchall()
+        await cur.close()
+        return [int(row[0]) for row in rows]
+    except Exception:
+        logger.exception("List denied failed")
+        return []
 
 
 # Test helper: expose row count

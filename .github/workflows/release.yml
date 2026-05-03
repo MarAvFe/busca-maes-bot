@@ -17,26 +17,29 @@ jobs:
 
       - name: Extract version from tag
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
 
       - name: Extract CHANGELOG section
         id: changelog
         run: |
           VERSION="${{ steps.version.outputs.VERSION }}"
-          # Extract [VERSION] section from CHANGELOG.md
-          awk "/^\## \[${VERSION}\]/,/^\## \[/" CHANGELOG.md | head -n -1 > /tmp/changelog.txt
-          # Escape newlines for GitHub Actions
-          echo "BODY<<EOF" >> $GITHUB_OUTPUT
-          cat /tmp/changelog.txt >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          sed -n "/^## \[${VERSION}\]/,/^## \[/{/^## \[/!p;}" CHANGELOG.md > /tmp/changelog.txt
+          sed -i -e '/./,$!d' -e :a -e '/^\n*$/{$d;N;ba' -e '}' /tmp/changelog.txt
+          if [ ! -s /tmp/changelog.txt ]; then
+            echo "::error::No CHANGELOG section found for version ${VERSION}"
+            exit 1
+          fi
+          {
+            echo "BODY<<EOF"
+            cat /tmp/changelog.txt
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref }}
-          release_name: "v${{ steps.version.outputs.VERSION }}"
+          tag_name: ${{ github.ref_name }}
+          name: "v${{ steps.version.outputs.VERSION }}"
           body: ${{ steps.changelog.outputs.BODY }}
           draft: false
           prerelease: false

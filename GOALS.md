@@ -6,7 +6,7 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 
 ---
 
-## Current state (v0.4.2)
+## Current state (v0.5.0)
 
 - ✅ TSE person-name search with multiple-result selection
 - ✅ Semver + Keep-a-Changelog
@@ -15,8 +15,8 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - ✅ Release policy: version bumps, CONTRIBUTING.md docs
 - ✅ Code restructure into `src/buscamaes/` modular package
 - ✅ Security hygiene: stop logging raw queries, input validation, error sanitization
-- ⬜ JSON structured logging + Sentry error tracking
-- ⬜ Automated git-tag releases
+- ✅ JSON structured logging + Sentry error tracking + correlation IDs
+- ✅ Automated git-tag releases (release.yml: tag → GH Release + GHCR image)
 - ⬜ Security middleware (allowlist, rate limiting, audit log)
 - ⬜ TSE upstream resilience (retries, circuit breaker)
 - ⬜ Claude Code tooling (CLAUDE.md, skills, agents, hooks)
@@ -60,11 +60,11 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - [x] Clean up `pyproject.toml` (dead per-file-ignores)
 - [x] Empty `bot/__init__.py` and `sources/__init__.py` (no public API exports yet)
 
-### M3 — Observability + release automation ⬜ `v0.5.0`
-- [ ] JSON structured logging with per-request correlation IDs
-- [ ] Sentry integration (gated on `SENTRY_DSN` env var)
-- [ ] Docker Compose healthcheck
-- [ ] GitHub Actions release workflow: tag → extract CHANGELOG section → GH Release + GHCR image
+### M3 — Observability + release automation ✅ `v0.5.0`
+- [x] JSON structured logging with per-request correlation IDs
+- [x] Sentry integration (gated on `SENTRY_DSN` env var)
+- [x] Docker Compose healthcheck (process-level via pgrep)
+- [x] GitHub Actions release workflow: tag → extract CHANGELOG section → GH Release + GHCR image
 
 ### M4 — Security middleware ⬜ `v0.6.0`
 - [ ] Telegram user ID allowlist (`ALLOWLIST_USER_IDS` env var)

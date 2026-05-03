@@ -1,7 +1,7 @@
-import re
 import logging
+import re
+from dataclasses import dataclass
 from urllib.parse import unquote
-from dataclasses import dataclass, field
 
 import httpx
 from bs4 import BeautifulSoup
@@ -11,7 +11,10 @@ logger = logging.getLogger(__name__)
 BASE = "https://servicioselectorales.tse.go.cr/chc"
 TSE_SEARCH_URL = "https://servicioselectorales.tse.go.cr/chc/consulta_nombres.aspx"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        " (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36"
+    ),
     "Accept-Language": "es-CR,es;q=0.9",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 }
@@ -19,7 +22,7 @@ HEADERS = {
 
 @dataclass
 class SearchResult:
-    index: int       # 0-based position → used as chk1$N
+    index: int  # 0-based position → used as chk1$N
     cedula: str
     nombre: str
     fallecido: bool = False
@@ -30,8 +33,8 @@ class SearchSession:
     muestra_url: str
     viewstate: dict
     cookies: dict[str, str]
-    results: list[SearchResult]      # alive results only (fallecidos filtered)
-    total_raw: int                   # total count before filter
+    results: list[SearchResult]  # alive results only (fallecidos filtered)
+    total_raw: int  # total count before filter
 
 
 @dataclass
@@ -118,7 +121,7 @@ def _parse_results_list(soup: BeautifulSoup) -> tuple[list[SearchResult], int]:
             continue
 
         text = label.get_text(strip=True)
-        match = re.match(r"\d+[-–]\s*(\d+)\s+(.+)", text)
+        match = re.match(r"\d+[-\u2013]\s*(\d+)\s+(.+)", text)
         if not match:
             continue
 
@@ -211,7 +214,9 @@ async def _do_search(
         return None
 
     muestra_url = f"https://servicioselectorales.tse.go.cr{unquote(redirect_path)}"
-    resp = await client.get(muestra_url, headers={**HEADERS, "Referer": f"{BASE}/consulta_nombres.aspx"})
+    resp = await client.get(
+        muestra_url, headers={**HEADERS, "Referer": f"{BASE}/consulta_nombres.aspx"}
+    )
     resp.raise_for_status()
 
     return muestra_url, BeautifulSoup(resp.text, "lxml")
@@ -223,10 +228,7 @@ def _exact_word_score(nombre_result: str, *terms: str) -> int:
     "mora" scores a hit in "JUAN MORA FERNANDEZ" but not in "JUAN MORALES FERNANDEZ".
     """
     text = nombre_result.lower()
-    return sum(
-        1 for t in terms
-        if t and re.search(r"\b" + re.escape(t.lower()) + r"\b", text)
-    )
+    return sum(1 for t in terms if t and re.search(r"\b" + re.escape(t.lower()) + r"\b", text))
 
 
 async def search_session(
@@ -247,7 +249,10 @@ async def search_session(
         all_results, total_raw = _parse_results_list(soup)
 
         alive = [r for r in all_results if not r.fallecido]
-        alive.sort(key=lambda r: _exact_word_score(r.nombre, nombre, apellido1, apellido2), reverse=True)
+        alive.sort(
+            key=lambda r: _exact_word_score(r.nombre, nombre, apellido1, apellido2),
+            reverse=True,
+        )
 
         return SearchSession(
             muestra_url=muestra_url,

@@ -1,11 +1,11 @@
 import logging
 import os
 import time
-from pathlib import Path
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from dotenv import load_dotenv
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -16,9 +16,9 @@ from telegram.ext import (
 )
 
 from tse_scraper import (
+    TSE_SEARCH_URL,
     PersonResult,
     SearchSession,
-    TSE_SEARCH_URL,
     search_session,
     select_from_session,
 )
@@ -41,6 +41,7 @@ SESSION_TTL = 300  # seconds before a pending search expires
 # ---------------------------------------------------------------------------
 # In-memory pending search store
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class PendingSearch:
@@ -68,6 +69,7 @@ def _pop_session(user_id: int) -> SearchSession | None:
 # ---------------------------------------------------------------------------
 # Formatting helpers
 # ---------------------------------------------------------------------------
+
 
 def _parse_name_input(text: str) -> tuple[str, str, str]:
     parts = text.strip().split()
@@ -122,7 +124,8 @@ def _choices_header(session: SearchSession, nombre: str, apellido1: str, apellid
     lines = [f"*{total} resultado(s)* para *{query}*"]
     if filtered:
         lines.append(f"_{filtered} fallecido(s) ocultado(s)_")
-    lines.append(f"\nMostrando los primeros {min(alive, MAX_CHOICES)}. Seleccioná uno o refiná la búsqueda:")
+    shown = min(alive, MAX_CHOICES)
+    lines.append(f"\nMostrando los primeros {shown}. Seleccioná uno o refiná la búsqueda:")
     return "\n".join(lines)
 
 
@@ -130,7 +133,9 @@ def _choices_header(session: SearchSession, nombre: str, apellido1: str, apellid
 # Command handlers
 # ---------------------------------------------------------------------------
 
+
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     await update.message.reply_text(
         f"*BuscaMaes* v{VERSION}\n\n"
         "Envíame un nombre para buscarlo en el TSE.\n\n"
@@ -138,16 +143,18 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "  `juan mora fernandez`\n"
         "  `maria jose mora`\n"
         "  `mora fernandez`\n\n"
-        "También puedes usar /buscar seguido del nombre.",
+        "También podés usar /buscar seguido del nombre.",
         parse_mode="Markdown",
     )
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     await update.message.reply_text(
         f"*BuscaMaes* v{VERSION}\n\n"
         "*Uso:*\n"
-        "Escribe un nombre (o parte del nombre) y el bot buscará en el padrón electoral del TSE.\n\n"
+        "Escribí un nombre (o parte del nombre) y el bot buscará"
+        " en el padrón electoral del TSE.\n\n"
         "*Formato:* `nombre apellido1 apellido2`\n"
         "  - El último token es el segundo apellido\n"
         "  - El penúltimo es el primer apellido\n"
@@ -164,6 +171,8 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def _do_search(update: Update, nombre: str, apellido1: str, apellido2: str) -> None:
+    assert update.effective_user is not None
+    assert update.message is not None
     user_id = update.effective_user.id
     msg = await update.message.reply_text("🔍 Buscando…")
 
@@ -203,6 +212,9 @@ async def _do_search(update: Update, nombre: str, apellido1: str, apellido2: str
 
 async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     query = update.callback_query
+    assert query is not None
+    assert query.data is not None
+    assert update.effective_user is not None
     await query.answer()
     user_id = update.effective_user.id
 
@@ -237,6 +249,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def cmd_buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
     query = " ".join(context.args) if context.args else ""
     if not query:
         await update.message.reply_text("Uso: /buscar <nombre> [apellido1] [apellido2]")
@@ -246,6 +259,8 @@ async def cmd_buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
+    assert update.message.text is not None
     nombre, apellido1, apellido2 = _parse_name_input(update.message.text)
     if not nombre:
         await update.message.reply_text("Por favor ingrese al menos un nombre.")
@@ -256,6 +271,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+
 
 def main() -> None:
     if not BOT_TOKEN:

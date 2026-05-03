@@ -1,5 +1,6 @@
 ﻿# environment
 .env
+.mcp.json
 
 # python
 __pycache__/

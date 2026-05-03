@@ -16,14 +16,18 @@ The bot replicates the browser flow on `servicioselectorales.tse.go.cr`:
 
 ## Requirements
 
-- Python 3.11+
+- Python 3.12+
+- [uv](https://docs.astral.sh/uv/) — fast Python package manager
 - A Telegram bot token (get one from [@BotFather](https://t.me/BotFather))
 
 ## Setup
 
 ```bash
+# Install uv (once)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Install dependencies
-pip install -r requirements.txt
+uv sync
 
 # Create your .env file
 cp .env.example .env
@@ -37,16 +41,16 @@ BOT_TOKEN=123456789:ABCdefGHIjklMNOpqrSTUvwxYZ
 
 ## Running
 
-Test the scraper first (no Telegram needed):
-
-```bash
-python test_scraper.py
-```
-
 Start the bot:
 
 ```bash
-python bot.py
+uv run python bot.py
+```
+
+## Testing
+
+```bash
+uv run pytest
 ```
 
 ## Usage
@@ -83,12 +87,13 @@ Choose Ubuntu 24.04, the $6 basic plan, and add your SSH key.
 **2. Install Docker on the Droplet**
 ```bash
 curl -fsSL https://get.docker.com | sh
+usermod -aG docker $USER && newgrp docker
 ```
 
 **3. Clone the repo and configure**
 ```bash
-git clone <your-repo-url>
-cd tse_bot
+git clone git@github.com:maravfe/busca-maes-bot.git
+cd busca-maes-bot
 cp .env.example .env
 nano .env   # paste your BOT_TOKEN
 ```
@@ -100,11 +105,23 @@ docker compose up -d --build
 
 The `restart: unless-stopped` policy in `docker-compose.yml` keeps the bot alive across reboots and crashes.
 
-**Useful commands**
+**5. Verify it's running**
 ```bash
-docker compose logs -f       # live logs
-docker compose pull && docker compose up -d --build   # deploy a new version
-docker compose down          # stop
+docker compose ps           # should show "running"
+docker compose logs -f      # watch live logs
+```
+
+**Deploying a new version**
+```bash
+git pull
+docker compose up -d --build
+```
+
+**Other useful commands**
+```bash
+docker compose logs -f      # live logs
+docker compose restart      # restart without rebuilding
+docker compose down         # stop
 ```
 
 ## Versioning
@@ -119,7 +136,7 @@ When releasing a new version, update `VERSION` and add an entry to `CHANGELOG.md
 
 ## Roadmap
 
-See [CHANGELOG.md](CHANGELOG.md) for planned features.
+See [GOALS.md](GOALS.md) for the full roadmap and long-term goals, and [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Notes
 

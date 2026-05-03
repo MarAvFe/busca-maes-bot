@@ -8,7 +8,7 @@ from telegram.ext import ContextTypes
 from .. import __version__
 from ..logging_utils import query_hash
 from ..sources.tse import SearchSession, search_session, select_from_session
-from ..validation import sanitize_user_error
+from ..validation import sanitize_user_error, validate_name_query
 from .formatting import (
     _build_choices_keyboard,
     _choices_header,
@@ -86,6 +86,12 @@ async def _do_search(update: Update, query: str) -> None:
     user_id = update.effective_user.id
     msg = await update.message.reply_text("🔍 Buscando…")
 
+    try:
+        query = validate_name_query(query)
+    except ValueError as e:
+        await msg.edit_text(f"❌ {e}")
+        return
+
     # Try multiple decompositions
     decompositions = _parse_name_input_with_fallbacks(query)
     session = None
@@ -110,7 +116,7 @@ async def _do_search(update: Update, query: str) -> None:
                 )
                 break
         except Exception:
-            logger.exception(f"Search attempt {i + 1} failed")
+            logger.exception("Search attempt %d failed", i + 1)
             # Continue to next decomposition
 
     if not session or not session.results:

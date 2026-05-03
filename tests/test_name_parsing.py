@@ -1,9 +1,4 @@
-import os
-
-# Prevent bot.py from failing on missing BOT_TOKEN at import time
-os.environ.setdefault("BOT_TOKEN", "test_token")
-
-from src.buscamaes.bot.formatting import _parse_name_input
+from buscamaes.bot.formatting import _parse_name_input
 
 
 def test_single_word():

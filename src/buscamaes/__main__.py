@@ -20,6 +20,7 @@ def main() -> None:
     )
     logger = logging.getLogger(__name__)
 
+    assert settings.bot_token is not None
     app = Application.builder().token(settings.bot_token).build()
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(CommandHandler("help", cmd_help))

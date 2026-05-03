@@ -1,8 +1,4 @@
-import os
-
-os.environ.setdefault("BOT_TOKEN", "test_token")
-
-from src.buscamaes.bot.formatting import _parse_name_input_with_fallbacks
+from buscamaes.bot.formatting import _parse_name_input_with_fallbacks
 
 
 def test_single_word_no_fallback():

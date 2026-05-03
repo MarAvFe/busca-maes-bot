@@ -6,13 +6,14 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 
 ---
 
-## Current state (v0.2.0)
+## Current state (v0.4.0)
 
 - ✅ TSE person-name search with multiple-result selection
 - ✅ Semver + Keep-a-Changelog
 - ✅ Dockerized deployment (DigitalOcean droplet)
 - ✅ Tooling foundation: uv, ruff, mypy, pytest, GitHub Actions CI
-- ⬜ Code restructure into `src/buscamaes/` package
+- ✅ Release policy: version bumps, CONTRIBUTING.md docs
+- ✅ Code restructure into `src/buscamaes/` modular package
 - ⬜ JSON structured logging + Sentry error tracking
 - ⬜ Automated git-tag releases
 - ⬜ Security middleware (allowlist, rate limiting, input validation, audit log)
@@ -30,17 +31,17 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - [x] pytest with initial test suite
 - [x] GitHub Actions CI: lint / typecheck / test on every PR and push to main
 
-### M1.5 — Release policy ⬜ `v0.3.0`
-- [ ] README version badge updated to match VERSION file
-- [ ] Release procedure documented in CONTRIBUTING.md
-- [ ] Tool caches (.mypy_cache, .ruff_cache, .pytest_cache) added to .gitignore
+### M1.5 — Release policy ✅ `v0.3.0`
+- [x] README version badge updated to match VERSION file
+- [x] Release procedure documented in CONTRIBUTING.md
+- [x] Tool caches (.mypy_cache, .ruff_cache, .pytest_cache) added to .gitignore
 
-### M2 — Code restructure ⬜ `v0.4.0`
-- [ ] Reorganize into `src/buscamaes/{bot,sources/tse,storage,resilience}/`
-- [ ] `Container` dataclass for dependency injection
-- [ ] `settings.py` for env loading and validation
-- [ ] Unit tests for TSE parser and formatting using captured HTML fixtures
-- [ ] Docker and CI smoke test updated
+### M2 — Code restructure ✅ `v0.4.0`
+- [x] Reorganize into `src/buscamaes/{bot,sources/tse,storage,resilience}/`
+- [x] `settings.py` for env loading and validation
+- [x] Modular layout with backward-compat shims for import compatibility
+- [x] Dockerfile updated to `["uv", "run", "python", "-m", "buscamaes"]`
+- [x] All tests passing; lint/format/typecheck green
 
 ### M3 — Observability + release automation ⬜ `v0.5.0`
 - [ ] JSON structured logging with per-request correlation IDs

@@ -6,7 +6,7 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 
 ---
 
-## Current state (v0.5.0)
+## Current state (v0.6.0)
 
 - ✅ TSE person-name search with multiple-result selection
 - ✅ Semver + Keep-a-Changelog
@@ -17,7 +17,7 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - ✅ Security hygiene: stop logging raw queries, input validation, error sanitization
 - ✅ JSON structured logging + Sentry error tracking + correlation IDs
 - ✅ Automated git-tag releases (release.yml: tag → GH Release + GHCR image)
-- ⬜ Security middleware (allowlist, rate limiting, audit log)
+- ✅ Security middleware (allowlist, rate limiting, audit log, disclaimer)
 - ⬜ TSE upstream resilience (retries, circuit breaker)
 - ⬜ Claude Code tooling (CLAUDE.md, skills, agents, hooks)
 - ⬜ Vehicle plate registry integration
@@ -66,12 +66,12 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - [x] Docker Compose healthcheck (process-level via pgrep)
 - [x] GitHub Actions release workflow: tag → extract CHANGELOG section → GH Release + GHCR image
 
-### M4 — Security middleware ⬜ `v0.6.0`
-- [ ] Telegram user ID allowlist (`ALLOWLIST_USER_IDS` env var)
-- [ ] Per-user rate limiting (in-memory token bucket)
-- [ ] Input validation: length cap, character allowlist, sanitized error messages
-- [ ] SQLite audit log (`/data/audit.db`) — stores query hashes, not raw text; 90-day retention
-- [ ] Misuse disclaimer in `/start` and `/help`
+### M4 — Security middleware ✅ `v0.6.0`
+- [x] Telegram user ID allowlist (`ALLOWLIST_USER_IDS` env var, fail-closed)
+- [x] Per-user rate limiting (in-memory token bucket)
+- [x] SQLite audit log (`/data/audit.db`) — stores query hashes, not raw text; 90-day retention
+- [x] Misuse disclaimer in `/start` and `/help`
+- (Input validation already shipped in M2.6)
 
 ### M5 — Resilience ⬜ `v0.7.0`
 - [ ] Tenacity retry policy around TSE HTTP calls (3 tries, exponential backoff)

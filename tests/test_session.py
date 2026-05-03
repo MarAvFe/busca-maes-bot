@@ -3,8 +3,8 @@ import time
 
 os.environ.setdefault("BOT_TOKEN", "test_token")
 
-from bot import SESSION_TTL, PendingSearch
-from tse_scraper import SearchSession
+from src.buscamaes.bot.handlers import SESSION_TTL, PendingSearch
+from src.buscamaes.sources.tse import SearchSession
 
 
 def _make_session() -> SearchSession:

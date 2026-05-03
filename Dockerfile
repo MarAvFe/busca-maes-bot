@@ -7,6 +7,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
-COPY bot.py tse_scraper.py VERSION ./
+COPY src ./src
+COPY VERSION ./
 
-CMD ["uv", "run", "python", "bot.py"]
+CMD ["uv", "run", "python", "-m", "buscamaes"]

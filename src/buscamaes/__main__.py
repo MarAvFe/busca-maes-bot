@@ -1,8 +1,5 @@
-#!/usr/bin/env python3
-# Backward compatibility shim - import from new location
 import logging
 
-from dotenv import load_dotenv
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
@@ -11,10 +8,8 @@ from telegram.ext import (
     filters,
 )
 
-from src.buscamaes.bot.handlers import cmd_buscar, cmd_help, cmd_start, handle_callback, handle_text
-from src.buscamaes.settings import get_settings
-
-load_dotenv()
+from .bot.handlers import cmd_buscar, cmd_help, cmd_start, handle_callback, handle_text
+from .settings import get_settings
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",

@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
 - Vehicle plate lookup via rnpdigital.com (cars and motorcycles)
 
+## [0.4.0] - 2026-05-03
+
+### Added
+- Code restructure into `src/buscamaes/` package: `bot/`, `sources/tse/`, `storage/`
+- `src/buscamaes/sources/tse/` splits scraper into `models.py`, `parser.py`, `client.py`
+- `src/buscamaes/bot/` splits handlers into `handlers.py`, `formatting.py`
+- `src/buscamaes/__main__.py` entry point for `python -m buscamaes`
+- `src/buscamaes/settings.py` environment variable loader
+- `src/buscamaes/validation.py` input validation and sanitization stubs
+- `pyproject.toml` build system configuration with hatchling, dynamic version from VERSION file
+
+### Changed
+- Dockerfile: `CMD` changed to `["uv", "run", "python", "-m", "buscamaes"]`
+- Backward-compat shims in `bot.py` and `tse_scraper.py` import from new locations
+- `requires-python` bumped to >=3.12 in pyproject.toml
+- Tests updated to import from new package structure
+
 ## [0.3.0] - 2026-05-03
 
 ### Added

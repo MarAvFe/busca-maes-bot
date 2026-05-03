@@ -1,0 +1,8 @@
+{
+  "hooks": {
+    "plan-spec-enforcer": {
+      "enabled": true,
+      "path": "hooks/plan-spec-enforcer.js"
+    }
+  }
+}

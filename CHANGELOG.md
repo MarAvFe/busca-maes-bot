@@ -11,6 +11,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
 - Vehicle plate lookup via rnpdigital.com (cars and motorcycles)
 
+## [0.6.1] - 2026-05-03
+
+### Fixed
+- **Audit query hash consistency.** `no_results` path was hashing raw input `(query, "", "")` instead of parsed decomposition, breaking audit grouping. Now hashes first decomposition like success paths.
+- **Missing `make audit` target.** CHANGELOG promised it; now available on droplet.
+- **Dev-friendly audit DB default.** Added comment in `.env.example` showing local override: `AUDIT_DB_PATH=./data/audit.db`.
+
+## [0.6.0] - 2026-05-03
+
+### Added
+- **Allowlist** (`ALLOWLIST_USER_IDS` env var). Empty = deny all (fail-closed). Denied users get a polite refusal and an `auth_denied` audit row.
+- **Per-user rate limiting** (in-memory token bucket). Defaults: 10 requests / 60s. Configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW`.
+- **SQLite audit log** at `/data/audit.db`. Schema: `(ts, user_id, action, query_hash, correlation_id, result)`. Stores **query hashes only**, never raw text. WAL mode. 90-day retention via daily background cleanup task.
+- **Misuse disclaimer** in `/start` and `/help`: "Esta herramienta consulta registros públicos. El uso indebido es responsabilidad del usuario."
+- New packages: `src/buscamaes/security/` (allowlist, rate_limit, decorators) and `src/buscamaes/storage/` (audit DB).
+- New `make audit` target shows the last 20 audit rows.
+- 10 new tests (allowlist 3 + rate_limit 4 + audit 3) — total tests: 47.
+
+### Changed
+- `__main__.py` opens the audit DB on startup via PTB's `post_init` hook and starts the cleanup background task. Closes connection in `post_shutdown`.
+- `docker-compose.yml` mounts `./data:/data` for SQLite persistence across container rebuilds.
+- `.env.example` documents the four new env vars.
+
+### Upgrade notes
+- **Action required:** set `ALLOWLIST_USER_IDS` in `.env` before deploying, otherwise nobody (including you) can use the bot. Get your Telegram ID from `@userinfobot`.
+- Create a `data/` dir in the deployment directory before `docker compose up` (the volume mount expects it). The dir will be auto-created on the host but worth confirming permissions are correct.
+
 ## [0.5.0] - 2026-05-03
 
 ### Added

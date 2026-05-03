@@ -3,6 +3,8 @@ services:
     build: .
     restart: unless-stopped
     env_file: .env
+    volumes:
+      - ./data:/data
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f 'python -m buscamaes' || exit 1"]
       interval: 30s

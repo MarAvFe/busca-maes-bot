@@ -1,4 +1,4 @@
-.PHONY: help setup up logs down restart update stop
+.PHONY: help setup up logs down restart update stop audit
 
 help:
 	@echo "BuscaMaes Droplet Commands"
@@ -14,6 +14,7 @@ help:
 	@echo "  make down         Stop bot"
 	@echo "  make update       Pull latest + rebuild + start"
 	@echo "  make status       Show container status"
+	@echo "  make audit        Show last 20 audit log entries"
 
 setup:
 	git clone git@github.com:maravfe/busca-maes-bot.git
@@ -40,3 +41,6 @@ update:
 
 status:
 	docker compose ps
+
+audit:
+	docker compose exec bot sqlite3 /data/audit.db "SELECT ts, user_id, action, result FROM audit ORDER BY ts DESC LIMIT 20"

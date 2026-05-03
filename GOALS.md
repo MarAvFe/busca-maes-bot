@@ -6,7 +6,7 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 
 ---
 
-## Current state (v0.4.0)
+## Current state (v0.4.1)
 
 - ✅ TSE person-name search with multiple-result selection
 - ✅ Semver + Keep-a-Changelog
@@ -14,9 +14,10 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - ✅ Tooling foundation: uv, ruff, mypy, pytest, GitHub Actions CI
 - ✅ Release policy: version bumps, CONTRIBUTING.md docs
 - ✅ Code restructure into `src/buscamaes/` modular package
+- ✅ Security hygiene: stop logging raw queries, input validation, error sanitization
 - ⬜ JSON structured logging + Sentry error tracking
 - ⬜ Automated git-tag releases
-- ⬜ Security middleware (allowlist, rate limiting, input validation, audit log)
+- ⬜ Security middleware (allowlist, rate limiting, audit log)
 - ⬜ TSE upstream resilience (retries, circuit breaker)
 - ⬜ Claude Code tooling (CLAUDE.md, skills, agents, hooks)
 - ⬜ Vehicle plate registry integration
@@ -43,6 +44,13 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - [x] Dockerfile updated to `["uv", "run", "python", "-m", "buscamaes"]`
 - [x] All tests passing; lint/format/typecheck green
 
+### M2.5 — Security hygiene audit ✅ `v0.4.1`
+- [x] Stop logging raw query input (sha256 hash only)
+- [x] Lazy-eval all logger calls (% formatting, not f-strings)
+- [x] Add unit tests for scraper parsers (18 new tests, 33 total)
+- [x] Wire sanitize_user_error() into error paths
+- [x] LOG_LEVEL env var, default INFO (not DEBUG)
+
 ### M3 — Observability + release automation ⬜ `v0.5.0`
 - [ ] JSON structured logging with per-request correlation IDs
 - [ ] Sentry integration (gated on `SENTRY_DSN` env var)
@@ -62,7 +70,8 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - [ ] Integration test simulating TSE 503/timeout via `respx`
 
 ### M6 — Claude Code tooling ⬜ `v0.8.0`
-- [ ] `CLAUDE.md` — project conventions, security invariants, prohibited actions
+- [ ] `CLAUDE.md` — project conventions, security invariants, prohibited actions; **model policies: Opus full output, Haiku caveman mode**
+- [ ] `.claude/settings.json` — hook to auto-enable caveman (full intensity) when Haiku is invoked
 - [ ] `.claude/skills/release/` — `/release` skill automates VERSION bump + CHANGELOG promotion + PR
 - [ ] `.claude/skills/add-data-source/` — scaffolds a new registry integration
 - [ ] `.claude/agents/scraper-reviewer.md` — reviews TSE/scraper changes for regressions

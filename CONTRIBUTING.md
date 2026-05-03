@@ -53,6 +53,50 @@ uv run pytest
 
 All four must pass. If `ruff format --check` fails, run `ruff format .` to fix it.
 
+## Releasing a new version
+
+Until the `/release` skill exists (PR #6), releases are manual:
+
+1. **Bump version:**
+   ```bash
+   echo "0.X.Y" > VERSION
+   ```
+   Use semantic versioning: MAJOR.MINOR.PATCH (see [CHANGELOG.md](CHANGELOG.md) for rules).
+
+2. **Update CHANGELOG.md:**
+   ```markdown
+   ## [Unreleased]
+
+   ### Planned
+   - ...
+
+   ## [0.X.Y] - YYYY-MM-DD
+
+   ### Added
+   - ...
+   ```
+   Move the `[Unreleased]` section to a dated release section. Add a new empty `[Unreleased]` at the top.
+
+3. **Commit and tag:**
+   ```bash
+   git add VERSION CHANGELOG.md
+   git commit -m "chore: bump version to 0.X.Y"
+   git tag v0.X.Y
+   git push origin HEAD
+   git push origin v0.X.Y
+   ```
+
+4. **GitHub Actions will:**
+   - Run `release.yml` workflow on tag push
+   - Extract the matching `## [0.X.Y]` section from CHANGELOG
+   - Create a GitHub Release with that body
+   - Build and push Docker image to GHCR tagged `:0.X.Y` and `:latest`
+
+**Before releasing, ensure:**
+- The commit with the version bump is on `main` and all CI is green
+- No uncommitted changes (clean working tree)
+- You have push access to both the repo and Docker registry
+
 ## Common fixes
 
 ### "Import block is un-sorted"

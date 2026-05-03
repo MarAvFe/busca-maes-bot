@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dockerfile now uses uv for dependency installation (faster, reproducible builds)
 - README updated with uv setup instructions and improved DigitalOcean deploy guide
 - Bot UX voice: consistent voseo Spanish (Escribí, podés, etc.)
+- README version badge: 0.2.0 → 0.3.0
+- Tool cache directories (.mypy_cache, .ruff_cache, .pytest_cache) added to .gitignore
+
+### Added (Documentation)
+- Release procedure documented in CONTRIBUTING.md (manual process until `/release` skill in PR #6)
+- GOALS.md milestone M1.5: release policy and documentation
 
 ## [0.2.0] - 2026-05-02
 

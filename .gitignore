@@ -13,5 +13,10 @@ venv/
 *.bak
 *.har
 
+# tool caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
 # editor / tooling
 .claude/

@@ -11,7 +11,7 @@ from .formatting import (
     _build_choices_keyboard,
     _choices_header,
     _format_person,
-    _parse_name_input,
+    _parse_name_input_with_fallbacks,
 )
 
 logger = logging.getLogger(__name__)
@@ -85,24 +85,43 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
-async def _do_search(update: Update, nombre: str, apellido1: str, apellido2: str) -> None:
+async def _do_search(update: Update, query: str) -> None:
     assert update.effective_user is not None
     assert update.message is not None
     user_id = update.effective_user.id
-    logger.info(f"User {user_id} searching for: {nombre!r} {apellido1!r} {apellido2!r}")
     msg = await update.message.reply_text("🔍 Buscando…")
 
-    try:
-        session = await search_session(nombre, apellido1, apellido2)
-    except Exception as e:
-        logger.exception("Search failed")
-        await msg.edit_text(f"❌ Error al buscar: {e}")
-        return
+    # Try multiple decompositions
+    decompositions = _parse_name_input_with_fallbacks(query)
+    session = None
+    used_decomposition = None
+
+    for i, (nombre, apellido1, apellido2) in enumerate(decompositions):
+        logger.debug(f"User {user_id} attempt {i + 1}: {nombre!r} {apellido1!r} {apellido2!r}")
+        try:
+            session = await search_session(nombre, apellido1, apellido2)
+            if session and session.results:
+                used_decomposition = (nombre, apellido1, apellido2)
+                logger.info(
+                    f"User {user_id} got results (attempt {i + 1}): "
+                    f"{nombre!r} {apellido1!r} {apellido2!r}"
+                )
+                break
+        except Exception:
+            logger.exception(f"Search attempt {i + 1} failed")
+            # Continue to next decomposition
 
     if not session or not session.results:
-        logger.info(f"No results found for user {user_id}: {nombre} {apellido1} {apellido2}")
+        logger.info(f"No results after {len(decompositions)} attempt(s) for user {user_id}")
         await msg.edit_text("No se encontraron resultados para esa búsqueda.")
         return
+
+    # Unpack the successful decomposition
+    if used_decomposition is None:
+        logger.error("Internal: used_decomposition is None despite session having results")
+        await msg.edit_text("❌ Error interno al procesar la búsqueda.")
+        return
+    nombre, apellido1, apellido2 = used_decomposition
 
     # Single result → show detail directly
     if len(session.results) == 1 and session.total_raw == 1:
@@ -171,15 +190,13 @@ async def cmd_buscar(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     if not query:
         await update.message.reply_text("Uso: /buscar <nombre> [apellido1] [apellido2]")
         return
-    nombre, apellido1, apellido2 = _parse_name_input(query)
-    await _do_search(update, nombre, apellido1, apellido2)
+    await _do_search(update, query)
 
 
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.message is not None
     assert update.message.text is not None
-    nombre, apellido1, apellido2 = _parse_name_input(update.message.text)
-    if not nombre:
+    if not update.message.text.strip():
         await update.message.reply_text("Por favor ingrese al menos un nombre.")
         return
-    await _do_search(update, nombre, apellido1, apellido2)
+    await _do_search(update, update.message.text)

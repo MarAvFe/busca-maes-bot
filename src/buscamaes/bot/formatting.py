@@ -14,6 +14,41 @@ def _parse_name_input(text: str) -> tuple[str, str, str]:
     return " ".join(parts[:-2]), parts[-2], parts[-1]
 
 
+def _parse_name_input_with_fallbacks(text: str) -> list[tuple[str, str, str]]:
+    """Generate decompositions of a name query in order of likelihood.
+
+    For "Maria Jose Mora Fernandez" (4 words):
+      Primary:  nombre="Maria Jose Mora", apellido1="Fernandez", apellido2=""
+      Fallback: nombre="Maria Jose", apellido1="Mora", apellido2="Fernandez"
+      Fallback: nombre="Maria", apellido1="Jose Mora", apellido2="Fernandez"
+
+    For "Maria Jose Mora" (3 words):
+      Primary:  nombre="Maria Jose", apellido1="Mora", apellido2=""
+      Fallback: nombre="Maria", apellido1="Jose", apellido2="Mora"
+
+    For "Maria Mora" (2 words):
+      Only:     nombre="Maria", apellido1="Mora", apellido2=""
+    """
+    parts = text.strip().split()
+    if len(parts) <= 2:
+        # 1-2 word queries: only one decomposition
+        return [_parse_name_input(text)]
+
+    decompositions: list[tuple[str, str, str]] = []
+
+    # Primary: traditional decomposition (rest, penultimate, last)
+    primary = _parse_name_input(text)
+    decompositions.append(primary)
+
+    # Fallback: all except last word → nome, last word → apel1
+    # Avoids duplicating the primary when len==3
+    fallback = (" ".join(parts[:-1]), parts[-1], "")
+    if fallback != primary:
+        decompositions.append(fallback)
+
+    return decompositions
+
+
 def _format_person(r: PersonResult) -> str:
     lines = []
     if r.cedula:

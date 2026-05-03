@@ -118,8 +118,8 @@ These must hold at every PR:
 
 ## Known limitations
 
-- **Audit row spam on allowlist denial.** Non-allowlisted users who spam requests generate 1 audit row per attempt. With ~100 trusted users, low risk. Mitigated by allowlist check running before rate-limit (denied users don't burn tokens). Acceptable v1.
-- **Callback clicks consume rate-limit tokens.** Each button click in multi-result selection eats 1 token. Search → 5 buttons → click = 2 tokens for 1 intent. Acceptable v1; defer callback exemption to v0.7 when usage data exists.
+- **Callback clicks consume rate-limit + daily quota.** Each button click is a separate update → token + daily count. Search → 5 buttons → click = 2 quota units for 1 intent. Threshold=20 req/day = ~10 searches/day. Acceptable v1; defer callback exemption to M5 when usage data exists.
+- **Denylist requires manual SQL recovery.** Operator auto-denied at threshold needs raw `sqlite3 /data/audit.db "DELETE FROM denied_users WHERE user_id=X"`. No operator bypass list yet. Acceptable for single-operator bot.
 
 ---
 

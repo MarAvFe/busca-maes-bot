@@ -1,6 +1,5 @@
 """Audit DB write + cleanup. Uses temp DB path."""
 
-
 import pytest
 
 from buscamaes.storage import audit

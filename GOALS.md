@@ -6,9 +6,10 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 
 ---
 
-## Current state (v0.6.2)
+## Current state (v0.7.0)
 
 - ✅ TSE person-name search with multiple-result selection
+- ✅ RNP vehicle plate search (cars, motorcycles, cargo trucks)
 - ✅ Semver + Keep-a-Changelog
 - ✅ Dockerized deployment (DigitalOcean droplet)
 - ✅ Tooling foundation: uv, ruff, mypy, pytest, GitHub Actions CI
@@ -18,9 +19,9 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - ✅ JSON structured logging + Sentry error tracking + correlation IDs
 - ✅ Automated git-tag releases (release.yml: tag → GH Release + GHCR image)
 - ✅ Security middleware (denylist + abuse detection, rate limiting, audit log)
+- ✅ RNP test coverage (59 tests, full ROT/SMELL hardening)
 - ⬜ TSE upstream resilience (retries, circuit breaker)
 - ⬜ Claude Code tooling (CLAUDE.md, skills, agents, hooks)
-- ⬜ Vehicle plate registry integration
 
 ---
 
@@ -74,7 +75,15 @@ BuscaMaes is a private Telegram bot that lets a small, trusted group (~100 users
 - [x] Daily counter (in-memory, UTC midnight reset)
 - (Input validation already shipped in M2.6)
 
-### M5 — Resilience ⬜ `v0.7.0`
+### M5 — RNP vehicle plate search ✅ `v0.7.0`
+- [x] RNP scraper (lazy login, session reuse, expiry retry)
+- [x] Plate format detection (6 patterns: auto numeric/alpha, MOT, CL)
+- [x] JSF/RichFaces HTML parser (ViewState, argus, vehicle fields)
+- [x] Markdown-safe formatting (escape special chars)
+- [x] Full test coverage (59 tests: detection, parser, client, formatting, handler)
+- [x] ROT/SMELL hardening (login detection, session reset, row-driven parser)
+
+### M6 — Resilience ⬜ `v0.8.0`
 - [ ] Tenacity retry policy around TSE HTTP calls (3 tries, exponential backoff)
 - [ ] Circuit breaker for TSE outages
 - [ ] Integration test simulating TSE 503/timeout via `respx`

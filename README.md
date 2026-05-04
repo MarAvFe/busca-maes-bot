@@ -1,11 +1,12 @@
 # BuscaMaesBot
 
-[![Version](https://img.shields.io/badge/version-0.6.2-orange)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.0-blue)](CHANGELOG.md)
 
-Telegram bot that searches for a person in the Costa Rica Tribunal Supremo de Elecciones (TSE) electoral registry by name.
+Telegram bot that searches the Costa Rica Tribunal Supremo de Elecciones (TSE) electoral registry for people by name, and the Registro Nacional de Personas (RNP) for vehicle plates.
 
 ## How it works
 
+### TSE person search
 The bot replicates the browser flow on `servicioselectorales.tse.go.cr`:
 
 1. Fetches a fresh VIEWSTATE from the search form
@@ -13,6 +14,15 @@ The bot replicates the browser flow on `servicioselectorales.tse.go.cr`:
 3. Parses the ASP.NET delta response to follow the redirect to the results list
 4. Selects the first result and follows the redirect to the person detail page
 5. Parses and returns the person's data
+
+### RNP vehicle plate search
+For plate lookups, the bot authenticates to `rnpdigital.com` and scrapes vehicle data:
+
+1. Logs in once with configured credentials (reused across queries)
+2. Detects session expiry and re-authenticates automatically
+3. Submits a plate query through the JSF form interface
+4. Parses HTML response and extracts vehicle metadata
+5. Returns a single-line summary (placa, marca, estilo, año, cc, valor, propietario)
 
 ## Requirements
 
@@ -55,6 +65,8 @@ uv run pytest
 
 ## Usage
 
+### Person search (TSE)
+
 Send any message to the bot with a name to search. The last two words are treated as the two apellidos, everything before is the nombre.
 
 | Input | nombre | apellido1 | apellido2 |
@@ -63,19 +75,40 @@ Send any message to the bot with a name to search. The last two words are treate
 | `maria jose mora fernandez` | maria jose | mora | fernandez |
 | `juan mora` | juan | mora | — |
 
-You can also use the `/buscar` command:
+Or use the `/buscar` command:
 
 ```
 /buscar juan mora fernandez
 ```
 
-### Other commands
+### Vehicle plate search (RNP)
+
+Send a single word (no spaces) to search for a vehicle plate. Supported formats:
+
+| Format | Example |
+|---|---|
+| 6 digits (auto) | `621335` |
+| 3 letters + 3 digits (auto) | `BJV123` |
+| Light cargo | `CL123456` |
+| Motorcycle (M + digits) | `M621335` |
+| Motorcycle (MOT + digits) | `MOT621335` |
+| Motorcycle (M + digits + letters) | `M123ABC` |
+
+Or use the `/placa` command:
+
+```
+/placa 621335
+/placa BJV123
+```
+
+### Commands
 
 | Command | Description |
 |---|---|
 | `/start` | Welcome message |
 | `/help` | Usage instructions |
-| `/buscar <name>` | Search by name |
+| `/buscar <name>` | Search person by name (TSE) |
+| `/placa <plate>` | Search vehicle by plate (RNP) |
 
 ## Deploying to DigitalOcean
 

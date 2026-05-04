@@ -9,7 +9,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
-- Vehicle plate lookup via rnpdigital.com (cars and motorcycles)
+- TSE upstream resilience (retries, circuit breaker)
+
+## [0.7.0] - 2026-05-04
+
+### Added
+- **RNP vehicle plate search.** Query Costa Rica's Registro Nacional de Personas (rnpdigital.com) for car and motorcycle plates. Supports 6 formats: 6-digit auto, 3-letter auto, CL cargo, M/MOT motorcycle (digit or digit+letter variants).
+- **RNP scraper module.** Lazy-login with session reuse across queries. Session-expiry detection and auto-retry (one retry on login page detection). Markdown-safe output formatting.
+- **Comprehensive RNP tests.** 59 new test cases: plate detection (17 tests), parser (10 tests), client (9 tests), formatting (8 tests), handler integration (2 tests).
+
+### Changed
+- RNP integration fixes from audit:
+  - Login success now requires auth cookie (not silent failure on reCAPTCHA/maintenance).
+  - Parser switched to row-driven extraction (resilient to layout drift).
+  - `extract_form_id` raises on missing anchor (no silent fallback).
+  - VehicleResult trimmed to 9 rendered fields (removed dead color/motor/dates).
+  - Settings check moved before "🔍 Buscando…" reply (no late unavailable message).
+
+### Upgrade notes
+- Add `RNP_EMAIL` and `RNP_PASSWORD` to `.env` to enable plate search (optional; defaults to disabled).
+- Optional: set `RNP_TIMEOUT` (default 30s) or `RNP_BASE_URL` (default `https://www.rnpdigital.com`).
+- Bot automatically detects single-word input as plate query; multi-word remains name search (backward compatible).
 
 ## [0.6.2] - 2026-05-03
 

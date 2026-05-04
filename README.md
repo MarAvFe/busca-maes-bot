@@ -1,6 +1,6 @@
 # BuscaMaesBot
 
-[![Version](https://img.shields.io/badge/version-0.7.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.1-blue)](CHANGELOG.md)
 
 Telegram bot that searches the Costa Rica Tribunal Supremo de Elecciones (TSE) electoral registry for people by name, and the Registro Nacional de Personas (RNP) for vehicle plates.
 

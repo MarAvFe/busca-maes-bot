@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
 - TSE upstream resilience (retries, circuit breaker)
 
+## [0.7.1] - 2026-05-04
+
+### Fixed
+- RNP login form ID extraction. Login page form doesn't contain `params` anchor; now `extract_form_id()` accepts empty anchor to grab the first form on any page. Fixes "Form with anchor 'params' not found" error on production login.
+
 ## [0.7.0] - 2026-05-04
 
 ### Added

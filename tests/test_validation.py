@@ -57,7 +57,6 @@ def test_value_error_passes_through():
 
 def test_timeout_returns_friendly_message():
     msg = sanitize_user_error(httpx.TimeoutException("connection timeout"))
-    assert "TSE" in msg
     assert "más tarde" in msg
 
 

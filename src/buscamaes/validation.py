@@ -1,5 +1,6 @@
 import re
 import unicodedata
+from dataclasses import dataclass
 
 
 def validate_name_query(query: str) -> str:
@@ -25,6 +26,46 @@ def validate_name_query(query: str) -> str:
     return normalized
 
 
+@dataclass
+class PlateQuery:
+    class_code: str
+    car_number: str
+    raw: str
+
+
+def detect_plate(text: str) -> PlateQuery | None:
+    """Detect if text is a plate. Returns PlateQuery or None."""
+    text = text.strip().upper()
+
+    if not text or " " in text:
+        return None
+
+    patterns = [
+        (r"^(\d{6})$", "AUT"),
+        (r"^([A-Z]{3})(\d{3})$", "AUT"),
+        (r"^(CL)(\d{6})$", "CL"),
+        (r"^(M)(\d{6})$", "MOT"),
+        (r"^(MOT)(\d{6})$", "MOT"),
+        (r"^(M)(\d{3})([A-Z]{3})$", "MOT"),
+    ]
+
+    for pattern, class_code in patterns:
+        match = re.match(pattern, text)
+        if match:
+            groups = match.groups()
+            if class_code == "AUT" and len(groups) == 1:
+                car_number = groups[0]
+            elif class_code == "AUT":
+                car_number = groups[0] + groups[1]
+            elif class_code in ("CL", "MOT"):
+                car_number = "".join(groups[1:])
+            else:
+                car_number = "".join(groups[1:])
+            return PlateQuery(class_code=class_code, car_number=car_number, raw=text)
+
+    return None
+
+
 def sanitize_user_error(exc: Exception) -> str:
     """Map exceptions to safe user-facing Spanish error messages.
 
@@ -36,9 +77,12 @@ def sanitize_user_error(exc: Exception) -> str:
         return str(exc)
 
     if "timeout" in msg or "connection" in msg:
-        return "No se pudo conectar con el TSE. Intentá de nuevo más tarde."
+        return "No se pudo conectar con RNP. Intentá de nuevo más tarde."
 
     if "http" in msg or "status" in msg:
-        return "El TSE no respondió correctamente. Intentá de nuevo."
+        return "RNP no respondió correctamente. Intentá de nuevo."
+
+    if "login" in msg:
+        return "Error de autenticación con RNP. Por favor reportar."
 
     return "Ocurrió un error inesperado. Por favor, intentá de nuevo."

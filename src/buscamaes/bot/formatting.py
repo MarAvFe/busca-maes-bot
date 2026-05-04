@@ -1,6 +1,7 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from ..sources.tse import TSE_SEARCH_URL, PersonResult, SearchSession
+from ..sources.rnp import VehicleResult
 
 MAX_CHOICES = 5
 
@@ -96,3 +97,24 @@ def _choices_header(session: SearchSession, nombre: str, apellido1: str, apellid
     shown = min(alive, MAX_CHOICES)
     lines.append(f"\nMostrando los primeros {shown}. Seleccioná uno o refiná la búsqueda:")
     return "\n".join(lines)
+
+
+def _format_vehicle(v: VehicleResult) -> str:
+    """Format vehicle result as single-line summary."""
+    parts = []
+    if v.placa:
+        parts.append(f"*{v.placa}*")
+    if v.categoria and v.marca and v.estilo:
+        parts.append(f"{v.categoria} {v.marca} {v.estilo}")
+    if v.año_fabricacion:
+        parts.append(f"({v.año_fabricacion})")
+    if v.cilindrada_cc:
+        parts.append(f"{v.cilindrada_cc} cc")
+    if v.valor_contrato:
+        parts.append(f"₡ {v.valor_contrato}")
+    if v.propietario_id and v.propietario_nombre:
+        parts.append(f"({v.propietario_id}) {v.propietario_nombre}")
+    elif v.propietario_id:
+        parts.append(f"({v.propietario_id})")
+
+    return " · ".join(parts) if parts else "Sin datos."

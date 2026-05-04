@@ -23,6 +23,12 @@ class Settings:
         self.audit_db_path: str = os.getenv("AUDIT_DB_PATH", "/data/audit.db")
         self.audit_retention_days: int = int(os.getenv("AUDIT_RETENTION_DAYS", "90"))
 
+        # RNP (plate search) credentials
+        self.rnp_email = os.getenv("RNP_EMAIL", "")
+        self.rnp_password = os.getenv("RNP_PASSWORD", "")
+        self.rnp_base_url: str = os.getenv("RNP_BASE_URL", "https://www.rnpdigital.com")
+        self.rnp_timeout: int = int(os.getenv("RNP_TIMEOUT", "30"))
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

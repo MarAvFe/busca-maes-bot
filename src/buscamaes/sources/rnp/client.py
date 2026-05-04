@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import re
-from functools import lru_cache
+from typing import TYPE_CHECKING
 
 import httpx
 
@@ -9,9 +9,16 @@ from ...settings import get_settings
 from .models import VehicleResult
 from .parser import extract_argus, extract_form_id, extract_viewstate, parse_vehicle
 
+if TYPE_CHECKING:
+    from typing import Optional
+else:
+    Optional = None
+
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://www.rnpdigital.com"
+
+_rnp_client_instance: "RNPClient | None" = None
 
 
 class RNPClient:
@@ -25,9 +32,17 @@ class RNPClient:
         self.timeout = settings.rnp_timeout
 
     async def query_plate(self, class_code: str, car_number: str) -> VehicleResult:
-        """Query a vehicle plate. Ensures session is active."""
+        """Query a vehicle plate. Ensures session is active. Retries once on expiry."""
         await self._ensure_session()
-        return await self._do_query(class_code, car_number)
+        try:
+            return await self._do_query(class_code, car_number)
+        except ValueError as e:
+            if "not found in HTML" in str(e):
+                logger.info("Session expired, re-logging in and retrying")
+                self._logged_in = False
+                await self._ensure_session()
+                return await self._do_query(class_code, car_number)
+            raise
 
     async def _ensure_session(self) -> None:
         """Lazy login: establish session if needed."""
@@ -35,6 +50,12 @@ class RNPClient:
             if self._logged_in and self._session is not None:
                 return
             await self._login()
+
+    def _looks_like_login_page(self, resp: httpx.Response) -> bool:
+        """Detect if response is a login page (expiry or forced re-auth)."""
+        if resp.url.path.endswith("login.jspx"):
+            return True
+        return "correo" in resp.text.lower() and "pass" in resp.text.lower()
 
     async def _login(self) -> None:
         """Full login flow to RNP. Sets _logged_in=True on success."""
@@ -66,12 +87,11 @@ class RNPClient:
         )
         login_post.raise_for_status()
 
-        # Check if login succeeded (auth cookie or no error message)
-        if (
-            "TSf1c497e2027" not in self._session.cookies
-            and "Datos incorrectos" in login_post.text
-        ):
-            raise RuntimeError("Login failed: invalid credentials")
+        # Check if login succeeded: auth cookie is the source of truth
+        if "TSf1c497e2027" not in self._session.cookies:
+            if "Datos incorrectos" in login_post.text:
+                raise RuntimeError("invalid credentials")
+            raise RuntimeError("login blocked")
 
         self._logged_in = True
         logger.info("RNP login successful")
@@ -150,6 +170,20 @@ class RNPClient:
             self._logged_in = False
 
 
-@lru_cache(maxsize=1)
 def get_rnp_client() -> RNPClient:
-    return RNPClient()
+    global _rnp_client_instance
+    if _rnp_client_instance is None:
+        _rnp_client_instance = RNPClient()
+    return _rnp_client_instance
+
+
+def reset_rnp_client() -> None:
+    """Reset the RNP client singleton. Only for testing."""
+    import asyncio
+    from contextlib import suppress
+
+    global _rnp_client_instance
+    if _rnp_client_instance is not None:
+        with suppress(RuntimeError):
+            asyncio.run(_rnp_client_instance.close())
+    _rnp_client_instance = None

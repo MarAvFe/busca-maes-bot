@@ -144,7 +144,7 @@ This is good. Code skeleton only, no full file contents, no prescriptive steps.
 4. Only after approval: Haiku implements
 
 **Hook enforcement:** `.claude/hooks/plan-spec-enforcer.js` blocks any Write to `plans/*` that:
-- Exceeds 100 lines
+- Exceeds 200 lines
 - Contains code blocks > 5 lines
 - Contains `old_string`/`new_string`, step sequences, or "replace entire file"
 

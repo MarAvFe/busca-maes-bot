@@ -1,9 +1,16 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-from ..sources.tse import TSE_SEARCH_URL, PersonResult, SearchSession
 from ..sources.rnp import VehicleResult
+from ..sources.tse import TSE_SEARCH_URL, PersonResult, SearchSession
 
 MAX_CHOICES = 5
+
+
+def _escape_markdown(text: str) -> str:
+    """Escape Telegram Markdown v1 special characters."""
+    for char in r"*_`[]()+=-{}":
+        text = text.replace(char, f"\\{char}")
+    return text
 
 
 def _parse_name_input(text: str) -> tuple[str, str, str]:
@@ -100,21 +107,26 @@ def _choices_header(session: SearchSession, nombre: str, apellido1: str, apellid
 
 
 def _format_vehicle(v: VehicleResult) -> str:
-    """Format vehicle result as single-line summary."""
+    """Format vehicle result as single-line summary with escaped Markdown."""
     parts = []
     if v.placa:
         parts.append(f"*{v.placa}*")
     if v.categoria and v.marca and v.estilo:
-        parts.append(f"{v.categoria} {v.marca} {v.estilo}")
+        categoria = _escape_markdown(v.categoria)
+        marca = _escape_markdown(v.marca)
+        estilo = _escape_markdown(v.estilo)
+        parts.append(f"{categoria} {marca} {estilo}")
     if v.año_fabricacion:
-        parts.append(f"({v.año_fabricacion})")
+        parts.append(f"({_escape_markdown(v.año_fabricacion)})")
     if v.cilindrada_cc:
-        parts.append(f"{v.cilindrada_cc} cc")
+        parts.append(f"{_escape_markdown(v.cilindrada_cc)} cc")
     if v.valor_contrato:
-        parts.append(f"₡ {v.valor_contrato}")
+        parts.append(f"₡ {_escape_markdown(v.valor_contrato)}")
     if v.propietario_id and v.propietario_nombre:
-        parts.append(f"({v.propietario_id}) {v.propietario_nombre}")
+        pid = _escape_markdown(v.propietario_id)
+        pnombre = _escape_markdown(v.propietario_nombre)
+        parts.append(f"({pid}) {pnombre}")
     elif v.propietario_id:
-        parts.append(f"({v.propietario_id})")
+        parts.append(f"({_escape_markdown(v.propietario_id)})")
 
     return " · ".join(parts) if parts else "Sin datos."

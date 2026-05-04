@@ -236,15 +236,16 @@ async def _do_plate_search(update: Update, plate_query) -> None:
     assert update.effective_user is not None
     assert update.message is not None
     user_id = update.effective_user.id
-    msg = await update.message.reply_text("🔍 Buscando…")
 
     try:
         from ..settings import get_settings
 
         settings = get_settings()
         if not settings.rnp_email or not settings.rnp_password:
-            await msg.edit_text("❌ Búsqueda de vehículos no disponible.")
+            await update.message.reply_text("❌ Búsqueda de vehículos no disponible.")
             return
+
+        msg = await update.message.reply_text("🔍 Buscando…")
 
         client = get_rnp_client()
         vehicle = await client.query_plate(plate_query.class_code, plate_query.car_number)

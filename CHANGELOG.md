@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Family tree search: person → parents → grandparents → children → cousins (TSE)
 - TSE upstream resilience (retries, circuit breaker)
 
+## [0.7.2] - 2026-05-04
+
+### Added
+- **RNP circuit breaker & throttle.** Prevents self-inflicted rate-limiting after discovering RNP's 10-request/2-minute cap per IP. Throttle limits to 8 requests / 120s per process. Breaker trips after 3 login blocks in 10min, cool-off 30min, auto-probe on recovery. Raises `RNPUnavailable` with user message "RNP no está disponible en este momento. Intentá más tarde." Audit result = "unavailable".
+- `docs/rnp-circuit-breaker.md` — design rationale, state machine, monitoring guide.
+
+### Changed
+- RNP client now instruments all HTTP calls with throttle acquisition.
+- Error handling: `RNPUnavailable` distinguished from generic errors; logged at DEBUG (expected, not an exception).
+
 ## [0.7.1] - 2026-05-04
 
 ### Fixed

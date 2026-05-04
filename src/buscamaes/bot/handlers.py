@@ -9,7 +9,7 @@ from .. import __version__
 from ..logging_utils import query_hash
 from ..observability import new_correlation_id
 from ..security.decorators import rate_limited
-from ..sources.rnp import get_rnp_client
+from ..sources.rnp import RNPUnavailable, get_rnp_client
 from ..sources.tse import SearchSession, search_session, select_from_session
 from ..storage.audit import record_audit
 from ..validation import detect_plate, sanitize_user_error, validate_name_query
@@ -266,6 +266,15 @@ async def _do_plate_search(update: Update, plate_query) -> None:
             action="plate_search",
             query_hash=query_hash(plate_query.raw),
             result="ok",
+        )
+    except RNPUnavailable as e:
+        logger.debug("RNP unavailable: %s", e)
+        await msg.edit_text(f"❌ {sanitize_user_error(e)}")
+        await record_audit(
+            user_id=user_id,
+            action="plate_search",
+            query_hash=query_hash(plate_query.raw),
+            result="unavailable",
         )
     except Exception as e:
         logger.exception("Plate search failed")

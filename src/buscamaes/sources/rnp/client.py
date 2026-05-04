@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import re
+import time
+from enum import Enum
 from typing import TYPE_CHECKING
 
 import httpx
@@ -21,6 +23,18 @@ BASE_URL = "https://www.rnpdigital.com"
 _rnp_client_instance: "RNPClient | None" = None
 
 
+class RNPUnavailable(Exception):
+    """RNP is temporarily unavailable (rate limited or circuit open)."""
+
+    pass
+
+
+class BreakerState(Enum):
+    CLOSED = "closed"
+    OPEN = "open"
+    HALF_OPEN = "half_open"
+
+
 class RNPClient:
     def __init__(self) -> None:
         self._session: httpx.AsyncClient | None = None
@@ -30,9 +44,28 @@ class RNPClient:
         self.email = settings.rnp_email
         self.password = settings.rnp_password
         self.timeout = settings.rnp_timeout
+        # Throttle: sliding window 120s, max 8 requests
+        self._request_times: list[float] = []
+        self._throttle_lock = asyncio.Lock()
+        self._throttle_window = 120.0
+        self._throttle_max = 8
+        # Circuit breaker: trip after 3 login blocks in 10 min
+        self._breaker_state = BreakerState.CLOSED
+        self._breaker_failures: list[float] = []
+        self._breaker_open_time: float | None = None
+        self._breaker_failure_window = 600.0
+        self._breaker_failure_threshold = 3
+        self._breaker_cooloff = 1800.0
 
     async def query_plate(self, class_code: str, car_number: str) -> VehicleResult:
-        """Query a vehicle plate. Ensures session is active. Retries once on expiry."""
+        """Query a vehicle plate. Ensures session is active. Retries once on expiry.
+
+        Raises RNPUnavailable if breaker is open or throttle exhausted.
+        """
+        # Check breaker before attempting anything
+        if not await self._check_breaker():
+            raise RNPUnavailable("RNP temporarily unavailable")
+
         await self._ensure_session()
         try:
             return await self._do_query(class_code, car_number)
@@ -43,6 +76,58 @@ class RNPClient:
                 await self._ensure_session()
                 return await self._do_query(class_code, car_number)
             raise
+        except RuntimeError as e:
+            if "login blocked" in str(e):
+                await self._record_breaker_failure()
+            raise
+
+    async def _throttle_acquire(self) -> None:
+        """Acquire a throttle slot (8 req / 120s). Raises RNPUnavailable if exhausted."""
+        async with self._throttle_lock:
+            now = time.monotonic()
+            self._request_times = [
+                t for t in self._request_times if now - t < self._throttle_window
+            ]
+            if len(self._request_times) >= self._throttle_max:
+                raise RNPUnavailable("Rate limit exceeded")
+            self._request_times.append(now)
+            logger.debug("Throttle: %d/%d slots used", len(self._request_times), self._throttle_max)
+
+    async def _check_breaker(self) -> bool:
+        """Check breaker. Returns False if open, True if closed/half-open."""
+        now = time.monotonic()
+        if self._breaker_state == BreakerState.CLOSED:
+            return True
+        if self._breaker_state == BreakerState.OPEN:
+            if self._breaker_open_time is None:
+                return False
+            if now - self._breaker_open_time >= self._breaker_cooloff:
+                logger.info("Breaker: open → half_open (cooloff expired)")
+                self._breaker_state = BreakerState.HALF_OPEN
+                return True
+            return False
+        return self._breaker_state == BreakerState.HALF_OPEN
+
+    async def _record_breaker_failure(self) -> None:
+        """Record a login block failure. Trip if threshold exceeded."""
+        now = time.monotonic()
+        self._breaker_failures = [
+            t for t in self._breaker_failures if now - t < self._breaker_failure_window
+        ]
+        self._breaker_failures.append(now)
+        if len(self._breaker_failures) >= self._breaker_failure_threshold:
+            logger.warning(
+                "Breaker: login blocks exceed threshold (%d), opening circuit",
+                self._breaker_failure_threshold,
+            )
+            self._breaker_state = BreakerState.OPEN
+            self._breaker_open_time = now
+        else:
+            logger.debug(
+                "Breaker: recorded failure (%d/%d)",
+                len(self._breaker_failures),
+                self._breaker_failure_threshold,
+            )
 
     async def _ensure_session(self) -> None:
         """Lazy login: establish session if needed."""
@@ -63,6 +148,7 @@ class RNPClient:
             self._session = httpx.AsyncClient(timeout=self.timeout, follow_redirects=True)
 
         # Step 1: GET login page
+        await self._throttle_acquire()
         login_resp = await self._session.get(f"{BASE_URL}/shopping/login.jspx")
         login_resp.raise_for_status()
         viewstate = extract_viewstate(login_resp.text)
@@ -73,6 +159,7 @@ class RNPClient:
         j_id21 = j_id21_match.group(1) if j_id21_match else ""
 
         # Step 2: POST login (AJAX)
+        await self._throttle_acquire()
         login_data = {
             "AJAXREQUEST": "_viewRoot",
             f"{form_id}": form_id,
@@ -103,6 +190,7 @@ class RNPClient:
             raise RuntimeError("Session not initialized")
 
         # Step 1: GET indiceDocumentos.jspx (navigate to free queries)
+        await self._throttle_acquire()
         idx_resp = await self._session.get(
             f"{BASE_URL}/shopping/consultaDocumentos/indiceDocumentos.jspx"
         )
@@ -113,6 +201,7 @@ class RNPClient:
         j_id335 = f"{idx_form_id}:j_id335"
 
         # Step 2: POST to navigate to vehicle query form
+        await self._throttle_acquire()
         nav_data = {
             f"{idx_form_id}": idx_form_id,
             "javax.faces.ViewState": idx_viewstate,
@@ -125,6 +214,7 @@ class RNPClient:
         nav_resp.raise_for_status()
 
         # Step 3: GET paramConsultaVehiculo.jspx
+        await self._throttle_acquire()
         param_resp = await self._session.get(
             f"{BASE_URL}/shopping/consultaDocumentos/paramConsultaVehiculo.jspx"
         )
@@ -133,6 +223,7 @@ class RNPClient:
         param_argus = extract_argus(param_resp.text)
 
         # Step 4: POST plate query
+        await self._throttle_acquire()
         query_data = {
             "params": "params",
             "params:j_id273": "PLA",
@@ -153,6 +244,7 @@ class RNPClient:
         query_resp.raise_for_status()
 
         # Step 5: GET results page
+        await self._throttle_acquire()
         result_resp = await self._session.get(
             f"{BASE_URL}/shopping/consultaDocumentos/RespConsultaVehiculo.jspx"
         )
@@ -160,6 +252,11 @@ class RNPClient:
 
         vehicle = parse_vehicle(result_resp.text)
         vehicle.placa = f"{class_code} {car_number}".upper()
+
+        if self._breaker_state == BreakerState.HALF_OPEN:
+            logger.info("Breaker: half_open → closed (probe succeeded)")
+            self._breaker_state = BreakerState.CLOSED
+            self._breaker_failures.clear()
 
         return vehicle
 

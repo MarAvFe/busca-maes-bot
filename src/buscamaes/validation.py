@@ -71,6 +71,11 @@ def sanitize_user_error(exc: Exception) -> str:
 
     Never expose tracebacks or internal details to users.
     """
+    from .sources.rnp import RNPUnavailable
+
+    if isinstance(exc, RNPUnavailable):
+        return "RNP no está disponible en este momento. Intentá más tarde."
+
     msg = str(exc).lower()
 
     if isinstance(exc, ValueError):

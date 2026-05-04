@@ -1,4 +1,4 @@
-from .client import RNPClient, get_rnp_client, reset_rnp_client
+from .client import RNPClient, RNPUnavailable, get_rnp_client, reset_rnp_client
 from .models import VehicleResult
 
-__all__ = ["RNPClient", "VehicleResult", "get_rnp_client", "reset_rnp_client"]
+__all__ = ["RNPClient", "RNPUnavailable", "VehicleResult", "get_rnp_client", "reset_rnp_client"]

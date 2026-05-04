@@ -17,8 +17,12 @@ def extract_form_id(html: str, anchor: str = "params") -> str:
     soup = BeautifulSoup(html, "lxml")
     for form in soup.find_all("form"):
         form_id = form.get("id")
-        if form_id and anchor in form_id.lower():
-            return str(form_id)
+        if form_id:
+            if anchor and anchor in form_id.lower():
+                return str(form_id)
+            elif not anchor:
+                # No anchor specified; return first form found
+                return str(form_id)
     raise ValueError(f"Form with anchor '{anchor}' not found")
 
 

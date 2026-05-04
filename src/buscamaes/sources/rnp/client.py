@@ -66,7 +66,8 @@ class RNPClient:
         login_resp = await self._session.get(f"{BASE_URL}/shopping/login.jspx")
         login_resp.raise_for_status()
         viewstate = extract_viewstate(login_resp.text)
-        form_id = extract_form_id(login_resp.text)
+        # Login page form may have different ID; grab the first form on the page
+        form_id = extract_form_id(login_resp.text, anchor="")
         # Extract j_id21 anti-bot hidden field from form
         j_id21_match = re.search(f'{form_id}:j_id21" [^>]*value="([^"]*)"', login_resp.text)
         j_id21 = j_id21_match.group(1) if j_id21_match else ""

@@ -75,7 +75,14 @@ class RNPClient:
 
         await self._ensure_session()
         try:
-            return await self._do_query(class_code, car_number)
+            result = await self._do_query(class_code, car_number)
+            # _do_query returns empty VehicleResult (no marca) and resets _logged_in
+            # when the POST body was empty (JSF state mismatch). Retry once with a
+            # fresh session so the caller gets the correct result on this request.
+            if not result.marca and not self._logged_in:
+                await self._ensure_session()
+                return await self._do_query(class_code, car_number)
+            return result
         except ValueError as e:
             if "not found in HTML" in str(e):
                 logger.info("Session expired, re-logging in and retrying")
@@ -232,14 +239,17 @@ class RNPClient:
         )
         query_resp.raise_for_status()
 
-        # Step 3: GET results page
-        await self._throttle_acquire()
-        result_resp = await self._session.get(
-            f"{self.base_url}/shopping/consultaDocumentos/RespConsultaVehiculo.jspx"
-        )
-        result_resp.raise_for_status()
+        # Empty body = server rejected the query (JSF state mismatch after class switch).
+        # Force re-login so the session is clean for the next request.
+        if not query_resp.text.strip():
+            logger.info("Query returned empty body — resetting session")
+            self._logged_in = False
+            return VehicleResult()
 
-        vehicle = parse_vehicle(result_resp.text)
+        # Parse result directly from the POST response — it already contains the full
+        # result page. Avoids a separate GET that would return stale session data when
+        # consecutive queries use different class codes.
+        vehicle = parse_vehicle(query_resp.text)
         vehicle.placa = f"{class_code} {car_number}".upper()
 
         if self._breaker_state == BreakerState.HALF_OPEN:

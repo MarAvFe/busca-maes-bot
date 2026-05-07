@@ -51,11 +51,11 @@ class RNPClient:
         self.password = password if password is not None else settings.rnp_password
         self.base_url = base_url if base_url is not None else settings.rnp_base_url
         self.timeout = timeout if timeout is not None else settings.rnp_timeout
-        # Throttle: sliding window 120s, max 8 requests
+        # Throttle: sliding window 120s, max 15 requests
         self._request_times: list[float] = []
         self._throttle_lock = asyncio.Lock()
         self._throttle_window = 120.0
-        self._throttle_max = 8
+        self._throttle_max = 15
         # Circuit breaker: trip after 3 login blocks in 10 min
         self._breaker_state = BreakerState.CLOSED
         self._breaker_failures: list[float] = []
@@ -63,6 +63,10 @@ class RNPClient:
         self._breaker_failure_window = 600.0
         self._breaker_failure_threshold = 3
         self._breaker_cooloff = 1800.0
+        # Multi-query session state
+        self._indice_viewstate: str | None = None
+        self._result_viewstate: str | None = None
+        self._param_argus: str | None = None
 
     async def query_plate(self, class_code: str, car_number: str) -> VehicleResult:
         """Query a vehicle plate. Ensures session is active. Retries once on expiry.
@@ -96,7 +100,7 @@ class RNPClient:
             raise
 
     async def _throttle_acquire(self) -> None:
-        """Acquire a throttle slot (8 req / 120s). Raises RNPUnavailable if exhausted."""
+        """Acquire a throttle slot (15 req / 120s). Raises RNPUnavailable if exhausted."""
         async with self._throttle_lock:
             now = time.monotonic()
             self._request_times = [
@@ -201,54 +205,149 @@ class RNPClient:
             logger.warning("Login failed — probe redirected to login page")
             raise RuntimeError("login blocked")
 
+        # Store ViewState from indiceDocumentos for first-query navigation
+        try:
+            self._indice_viewstate = extract_viewstate(probe_resp.text)
+        except ValueError:
+            self._indice_viewstate = None
+
+        self._result_viewstate = None
+        self._param_argus = None
         self._logged_in = True
         logger.info("RNP login successful")
+
+    async def _navigate_to_param_page(self) -> tuple[str, str]:
+        """Navigate to paramConsultaVehiculo, return (viewstate, argus)."""
+        if self._result_viewstate is not None:
+            return await self._reset_via_nueva_consulta()
+        if self._indice_viewstate is not None:
+            return await self._nav_from_indice(self._indice_viewstate)
+        # Fallback: direct GET (shouldn't happen in normal flow)
+        return await self._direct_get_param()
+
+    async def _reset_via_nueva_consulta(self) -> tuple[str, str]:
+        """POST Consultas Gratuitas AJAX → GET indice → POST nav to paramConsultaVehiculo."""
+        result_vs = self._result_viewstate
+        self._result_viewstate = None
+
+        # POST "Consultas Gratuitas" (j_id53:j_id159) AJAX to RespConsultaVehiculo
+        await self._throttle_acquire()
+        ajax_resp = await self._session.post(  # type: ignore[union-attr]
+            f"{self.base_url}/shopping/consultaDocumentos/RespConsultaVehiculo.jspx",
+            data={
+                "AJAXREQUEST": "_viewRoot",
+                "j_id53": "j_id53",
+                "javax.faces.ViewState": result_vs,
+                "j_id53:j_id159": "j_id53:j_id159",
+            },
+        )
+
+        # Parse AJAX redirect — <meta name="Location" content="...">
+        loc_match = re.search(r'name="Location"\s+content="([^"]+)"', ajax_resp.text)
+        redirect_path = (
+            loc_match.group(1)
+            if loc_match
+            else "/shopping/consultaDocumentos/indiceDocumentos.jspx"
+        )
+
+        # GET indiceDocumentos
+        await self._throttle_acquire()
+        indice_resp = await self._session.get(  # type: ignore[union-attr]
+            f"{self.base_url}{redirect_path}"
+        )
+        indice_resp.raise_for_status()
+        indice_vs = extract_viewstate(indice_resp.text)
+
+        return await self._nav_from_indice(indice_vs)
+
+    async def _nav_from_indice(self, indice_vs: str) -> tuple[str, str]:
+        """POST indiceDocumentos j_id267:j_id335 nav (follows 302) → return (viewstate, argus)."""
+        self._indice_viewstate = None
+        await self._throttle_acquire()
+        nav_resp = await self._session.post(  # type: ignore[union-attr]
+            f"{self.base_url}/shopping/consultaDocumentos/indiceDocumentos.jspx",
+            data={
+                "j_id267": "j_id267",
+                "javax.faces.ViewState": indice_vs,
+                "j_id267:j_id335": "j_id267:j_id335",
+            },
+        )
+        nav_resp.raise_for_status()
+        param_vs = extract_viewstate(nav_resp.text)
+        if self._param_argus is None:
+            self._param_argus = extract_argus(nav_resp.text)
+        return param_vs, self._param_argus
+
+    async def _direct_get_param(self) -> tuple[str, str]:
+        """Fallback: direct GET paramConsultaVehiculo (used if indice state is missing)."""
+        await self._throttle_acquire()
+        resp = await self._session.get(  # type: ignore[union-attr]
+            f"{self.base_url}/shopping/consultaDocumentos/paramConsultaVehiculo.jspx"
+        )
+        resp.raise_for_status()
+        param_vs = extract_viewstate(resp.text)
+        if self._param_argus is None:
+            self._param_argus = extract_argus(resp.text)
+        return param_vs, self._param_argus  # type: ignore[return-value]
 
     async def _do_query(self, class_code: str, car_number: str) -> VehicleResult:
         """Execute the plate query after session is established."""
         if self._session is None:
             raise RuntimeError("Session not initialized")
 
-        # Step 1: GET paramConsultaVehiculo.jspx (direct — no nav step needed)
-        await self._throttle_acquire()
-        param_resp = await self._session.get(
-            f"{self.base_url}/shopping/consultaDocumentos/paramConsultaVehiculo.jspx"
-        )
-        param_resp.raise_for_status()
-        param_viewstate = extract_viewstate(param_resp.text)
-        param_argus = extract_argus(param_resp.text)
+        param_viewstate, param_argus = await self._navigate_to_param_page()
 
-        # Step 2: POST plate query
+        # Limpiar (AJAX form clear — same ViewState reused for actual query)
         await self._throttle_acquire()
-        query_data = {
-            "params": "params",
-            "params:j_id273": "PLA",
-            "class": " " if class_code == "AUT" else class_code,
-            "code": " ",
-            "carNumber": car_number,
-            "params:argus": param_argus,
-            "javax.faces.ViewState": param_viewstate,
-            "params:j_id315": "params:j_id315",
-            "numeroConsulta": "26",
-            "nombreConsulta": "Consulta de Vehículo por Placa",
-            "error": "",
-        }
+        await self._session.post(
+            f"{self.base_url}/shopping/consultaDocumentos/paramConsultaVehiculo.jspx",
+            data={
+                "AJAXREQUEST": "_viewRoot",
+                "params": "params",
+                "params:j_id273": "PLA",
+                "class": " ",
+                "carNumber": "",
+                "params:argus": param_argus,
+                "javax.faces.ViewState": param_viewstate,
+                "params:limpiar": "params:limpiar",
+            },
+        )
+
+        # Plate query — httpx follows 302 redirect to RespConsultaVehiculo
+        await self._throttle_acquire()
         query_resp = await self._session.post(
             f"{self.base_url}/shopping/consultaDocumentos/paramConsultaVehiculo.jspx",
-            data=query_data,
+            data={
+                "params": "params",
+                "params:j_id273": "PLA",
+                "class": " " if class_code == "AUT" else class_code,
+                "code": " ",
+                "carNumber": car_number,
+                "params:argus": param_argus,
+                "javax.faces.ViewState": param_viewstate,
+                "params:j_id315": "params:j_id315",
+                "numeroConsulta": "26",
+                "nombreConsulta": "Consulta de Vehículo por Placa",
+                "error": "",
+            },
         )
         query_resp.raise_for_status()
 
-        # Empty body = server rejected the query (JSF state mismatch after class switch).
-        # Force re-login so the session is clean for the next request.
+        # Empty body = server rejected the query (JSF state mismatch).
         if not query_resp.text.strip():
             logger.info("Query returned empty body — resetting session")
             self._logged_in = False
+            self._result_viewstate = None
+            self._indice_viewstate = None
+            self._param_argus = None
             return VehicleResult()
 
-        # Parse result directly from the POST response — it already contains the full
-        # result page. Avoids a separate GET that would return stale session data when
-        # consecutive queries use different class codes.
+        # Store result page ViewState for next query's reset flow
+        try:
+            self._result_viewstate = extract_viewstate(query_resp.text)
+        except ValueError:
+            self._result_viewstate = None
+
         vehicle = parse_vehicle(query_resp.text)
         vehicle.placa = f"{class_code} {car_number}".upper()
 
@@ -265,6 +364,9 @@ class RNPClient:
             await self._session.aclose()
             self._session = None
             self._logged_in = False
+            self._indice_viewstate = None
+            self._result_viewstate = None
+            self._param_argus = None
 
 
 def get_rnp_client() -> RNPClient:

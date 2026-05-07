@@ -1,6 +1,6 @@
 import re
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 
 from .models import VehicleResult
 
@@ -8,7 +8,7 @@ from .models import VehicleResult
 def extract_viewstate(html: str) -> str:
     soup = BeautifulSoup(html, "lxml")
     inp = soup.find("input", {"name": "javax.faces.ViewState"})
-    if inp and inp.get("value"):
+    if isinstance(inp, Tag) and inp.get("value"):
         return str(inp["value"])
     raise ValueError("ViewState not found in HTML")
 
@@ -29,7 +29,7 @@ def extract_form_id(html: str, anchor: str = "params") -> str:
 def extract_argus(html: str) -> str:
     soup = BeautifulSoup(html, "lxml")
     inp = soup.find("input", {"name": "params:argus"})
-    if inp and inp.get("value"):
+    if isinstance(inp, Tag) and inp.get("value"):
         return str(inp["value"])
     raise ValueError("argus token not found in HTML")
 

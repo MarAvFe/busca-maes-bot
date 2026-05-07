@@ -182,10 +182,14 @@ class RNPClient:
         )
         login_post.raise_for_status()
 
-        # Check if login succeeded: auth cookie is the source of truth
-        if "TSf1c497e2027" not in self._session.cookies:
+        # Check if login succeeded: any TSf* Tomcat auth cookie present (name varies by deployment)
+        has_auth_cookie = any(k.startswith("TSf") for k in self._session.cookies)
+        if not has_auth_cookie:
             if "Datos incorrectos" in login_post.text:
                 raise RuntimeError("invalid credentials")
+            logger.warning(
+                "Login failed — no TSf* cookie. Present: %s", list(self._session.cookies.keys())
+            )
             raise RuntimeError("login blocked")
 
         self._logged_in = True

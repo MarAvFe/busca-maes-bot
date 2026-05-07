@@ -85,24 +85,31 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 @rate_limited
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     assert update.message is not None
-    await update.message.reply_text(
-        f"*BuscaMaes* v{__version__}\n\n"
-        "*Búsqueda de personas (TSE):*\n"
-        "Escribí un nombre o usa /buscar \\<nombre\\>\n"
-        "*Formato:* `nombre apellido1 apellido2`\n\n"
-        "*Búsqueda de vehículos (RNP):*\n"
-        "Escribí la placa del vehículo o usa /placa \\<placa\\>\n"
-        "*Formatos válidos:*\n"
-        "  - Auto: `621335` o `BJV123`\n"
-        "  - Moto: `621335` o `MOT621335` o `M621ABC`\n"
-        "  - Carga: `CL123456`\n\n"
-        "*Comandos:*\n"
-        "/buscar \\<nombre\\> — buscar persona\n"
-        "/placa \\<placa\\> — buscar vehículo\n"
-        "/start — bienvenida\n"
-        "/help — esta ayuda",
-        parse_mode="Markdown",
-    )
+    assert update.effective_user is not None
+    user_id = update.effective_user.id
+
+    help_text = f"*BuscaMaes* v{__version__}\n\n"
+    help_text += "*Búsqueda de personas (TSE):*\n"
+    help_text += "Escribí un nombre o usa /buscar \\<nombre\\>\n"
+    help_text += "*Formato:* `nombre apellido1 apellido2`\n\n"
+
+    # Conditionally show vehicle search based on allowlist
+    if _plate_allowed(user_id):
+        help_text += "*Búsqueda de vehículos (RNP):*\n"
+        help_text += "Escribí la placa del vehículo o usa /placa \\<placa\\>\n"
+        help_text += "*Formatos válidos:*\n"
+        help_text += "  - Auto: `621335` o `BJV123`\n"
+        help_text += "  - Moto: `621335` o `MOT621335` o `M621ABC`\n"
+        help_text += "  - Carga: `CL123456`\n\n"
+
+    help_text += "*Comandos:*\n"
+    help_text += "/buscar \\<nombre\\> — buscar persona\n"
+    if _plate_allowed(user_id):
+        help_text += "/placa \\<placa\\> — buscar vehículo\n"
+    help_text += "/start — bienvenida\n"
+    help_text += "/help — esta ayuda"
+
+    await update.message.reply_text(help_text, parse_mode="Markdown")
 
 
 async def _do_search(update: Update, query: str) -> None:
@@ -332,14 +339,18 @@ async def cmd_placa(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     new_correlation_id()
     assert update.message is not None
     assert update.effective_user is not None
-    plate_input = " ".join(context.args) if context.args else ""
-    if not plate_input:
-        await update.message.reply_text("Uso: /placa <placa>")
-        return
-    if not _plate_allowed(update.effective_user.id):
+    user_id = update.effective_user.id
+
+    # Check allowlist first; don't hint at command existence if not allowed
+    if not _plate_allowed(user_id):
         await update.message.reply_text(
             "Formato no reconocido. Ejemplos: 621335, BJV123, MOT621335, M621ABC, CL123456."
         )
+        return
+
+    plate_input = " ".join(context.args) if context.args else ""
+    if not plate_input:
+        await update.message.reply_text("Uso: /placa <placa>")
         return
     plate_query = detect_plate(plate_input)
     if not plate_query:
@@ -367,9 +378,15 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if plate_query and _plate_allowed(update.effective_user.id):
             await _do_plate_search(update, plate_query)
             return
-        await update.message.reply_text(
-            "Formato no reconocido. Escribí un nombre (2+ palabras) o una placa válida. Vea /help"
-        )
+        # If user not allowed, don't mention plate search exists
+        if _plate_allowed(update.effective_user.id):
+            error_msg = (
+                "Formato no reconocido. Escribí un nombre"
+                " (2+ palabras) o una placa válida. Vea /help"
+            )
+        else:
+            error_msg = "Escribí un nombre con al menos 2 palabras. Vea /help"
+        await update.message.reply_text(error_msg)
         return
 
     # Multi-word: name search

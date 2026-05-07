@@ -12,12 +12,13 @@ from ..security.decorators import rate_limited
 from ..settings import get_settings
 from ..sources.rnp import RNPUnavailable, get_rnp_pool
 from ..sources.tse import SearchSession, search_session, select_from_session
-from ..storage.audit import record_audit
+from ..storage.audit import get_stats, record_audit
 from ..validation import detect_plate, sanitize_user_error, validate_name_query
 from .formatting import (
     _build_choices_keyboard,
     _choices_header,
     _format_person,
+    _format_stats,
     _format_vehicle,
     _parse_name_input_with_fallbacks,
     _person_detail_keyboard,
@@ -392,3 +393,18 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     # Multi-word: name search
     await _do_search(update, text)
+
+
+@rate_limited
+async def cmd_stats(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    assert update.message is not None
+    assert update.effective_user is not None
+    user_id = update.effective_user.id
+
+    # Gate: admins only
+    if user_id not in get_settings().admin_user_ids:
+        await update.message.reply_text("Comando no reconocido.")
+        return
+
+    stats = await get_stats(days=7)
+    await update.message.reply_text(_format_stats(stats), parse_mode="Markdown")

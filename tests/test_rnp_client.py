@@ -14,6 +14,7 @@ def _setup_env(monkeypatch):
     monkeypatch.setenv("RNP_EMAIL", "test@example.com")
     monkeypatch.setenv("RNP_PASSWORD", "testpass")
     from buscamaes.settings import get_settings
+
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()

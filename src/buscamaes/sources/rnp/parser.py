@@ -87,9 +87,7 @@ def parse_vehicle(html: str) -> VehicleResult:
 
     def extract_field(label: str, max_length: int = 50) -> str:
         label_escaped = re.escape(label)
-        lookahead = "|".join(
-            re.escape(lb) for lb in known_labels if lb != label
-        )
+        lookahead = "|".join(re.escape(lb) for lb in known_labels if lb != label)
         pattern = rf"{label_escaped}:\s*(.+?)(?={lookahead}:\s|$)"
         match = re.search(pattern, text, re.IGNORECASE)
         if match:
@@ -111,12 +109,14 @@ def parse_vehicle(html: str) -> VehicleResult:
             result.cilindrada_cc = match.group(1).replace(",", "")
 
     cedula_match = re.search(
-        r"CEDULA\s+DE\s+IDENTIDAD\s+(\d+)\s+(.+?)(?=\s+Tomo:|\s+Ver Persona|\Z)",
+        r"CEDULA\s+DE\s+IDENTIDAD\s+(\d+)\s+(.+?)"
+        r"(?=\s+(?:No Posee|Emitido|Todos los derechos|Procesando|Si Posee|"
+        r"Ver Persona|Tomo)|\Z)",
         text,
         re.IGNORECASE | re.DOTALL,
     )
     if cedula_match:
         result.propietario_id = cedula_match.group(1)
-        result.propietario_nombre = cedula_match.group(2).strip()
+        result.propietario_nombre = cedula_match.group(2).strip()[:80]
 
     return result

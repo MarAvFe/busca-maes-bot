@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from buscamaes.validation import (
+    detect_plate,
     sanitize_user_error,
     validate_name_query,
 )
@@ -64,3 +65,50 @@ def test_generic_exception_returns_safe_default():
     msg = sanitize_user_error(RuntimeError("internal traceback details"))
     assert "internal traceback" not in msg
     assert "inesperado" in msg
+
+
+# ---------------------------------------------------------------------------
+# detect_plate
+# ---------------------------------------------------------------------------
+
+
+def test_detects_short_numeric_plates():
+    """Test that numeric plates with 1-6 digits are accepted."""
+    plate = detect_plate("123")
+    assert plate is not None
+    assert plate.class_code == "AUT"
+    assert plate.car_number == "123"
+    assert plate.raw == "123"
+
+
+def test_detects_short_and_long_numeric_plates():
+    """Test range of numeric plate lengths."""
+    for digits in ["1", "12", "123", "1234", "12345", "123456"]:
+        plate = detect_plate(digits)
+        assert plate is not None, f"Failed for {digits}"
+        assert plate.class_code == "AUT"
+        assert plate.car_number == digits
+
+
+def test_rejects_numeric_plates_over_6_digits():
+    """Test that numeric plates > 6 digits are rejected."""
+    plate = detect_plate("1234567")
+    assert plate is None
+
+
+def test_detects_alphanumeric_plates_still_require_exact_format():
+    """Test that letter-based plates still enforce their exact formats."""
+    # 3-letter + 3-digit (still valid)
+    plate = detect_plate("BJV123")
+    assert plate is not None
+    assert plate.class_code == "AUT"
+
+    # CL + 6-digit (cargo)
+    plate = detect_plate("CL123456")
+    assert plate is not None
+    assert plate.class_code == "CL"
+
+    # MOT + 6-digit
+    plate = detect_plate("MOT123456")
+    assert plate is not None
+    assert plate.class_code == "MOT"

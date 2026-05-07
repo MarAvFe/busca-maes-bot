@@ -9,7 +9,15 @@ from telegram.ext import (
     filters,
 )
 
-from .bot.handlers import cmd_buscar, cmd_help, cmd_placa, cmd_start, handle_callback, handle_text
+from .bot.handlers import (
+    cmd_buscar,
+    cmd_help,
+    cmd_placa,
+    cmd_start,
+    cmd_stats,
+    handle_callback,
+    handle_text,
+)
 from .observability import configure_logging, configure_sentry
 from .settings import get_settings
 from .storage.audit import cleanup_loop, close_db, init_db
@@ -42,6 +50,7 @@ def main() -> None:
     app.add_handler(CommandHandler("help", cmd_help))  # type: ignore[arg-type]
     app.add_handler(CommandHandler("buscar", cmd_buscar))  # type: ignore[arg-type]
     app.add_handler(CommandHandler("placa", cmd_placa))  # type: ignore[arg-type]
+    app.add_handler(CommandHandler("stats", cmd_stats))  # type: ignore[arg-type]
     app.add_handler(CallbackQueryHandler(handle_callback))  # type: ignore[arg-type]
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))  # type: ignore[arg-type]
 

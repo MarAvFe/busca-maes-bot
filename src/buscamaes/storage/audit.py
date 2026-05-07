@@ -156,6 +156,51 @@ async def _list_denied() -> list[int]:
         return []
 
 
+async def get_stats(days: int = 7) -> dict:
+    """Query audit table for usage stats over past N days."""
+    if _conn is None:
+        return {}
+    try:
+        # Total rows in period
+        cur = await _conn.execute(
+            "SELECT COUNT(*) FROM audit WHERE ts > datetime('now', ?)",
+            (f"-{days} days",),
+        )
+        row: Any = await cur.fetchone()
+        total = int(row[0]) if row else 0
+        await cur.close()
+
+        # Unique users
+        cur = await _conn.execute(
+            "SELECT COUNT(DISTINCT user_id) FROM audit WHERE ts > datetime('now', ?)",
+            (f"-{days} days",),
+        )
+        row = await cur.fetchone()
+        unique_users = int(row[0]) if row else 0
+        await cur.close()
+
+        # Breakdown by action + result
+        cur = await _conn.execute(
+            "SELECT action, result, COUNT(*) as cnt FROM audit"
+            " WHERE ts > datetime('now', ?)"
+            " GROUP BY action, result ORDER BY cnt DESC",
+            (f"-{days} days",),
+        )
+        rows: Any = await cur.fetchall()
+        breakdown = {f"{r[0]}:{r[1]}": r[2] for r in rows}
+        await cur.close()
+
+        return {
+            "days": days,
+            "total_queries": total,
+            "unique_users": unique_users,
+            "breakdown": breakdown,
+        }
+    except Exception:
+        logger.exception("get_stats failed")
+        return {}
+
+
 # Test helper: expose row count
 async def _count_rows() -> int:
     if _conn is None:

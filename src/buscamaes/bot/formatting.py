@@ -141,6 +141,31 @@ def _truncate_for_telegram(text: str, limit: int = 4000) -> str:
     return text[: limit - 1] + "…"
 
 
+def _format_stats(data: dict) -> str:
+    """Format audit stats for /stats command."""
+    if not data:
+        return "No stats available."
+
+    days = data.get("days", 7)
+    total = data.get("total_queries", 0)
+    unique = data.get("unique_users", 0)
+    breakdown = data.get("breakdown", {})
+
+    lines = [
+        f"*Stats (last {days} days)*",
+        f"Total queries: {total}",
+        f"Unique users: {unique}",
+    ]
+
+    if breakdown:
+        lines.append("\n*Breakdown:*")
+        for key, count in list(breakdown.items())[:5]:
+            action, result = key.split(":", 1)
+            lines.append(f"{action}={result}: {count}")
+
+    return "\n".join(lines)
+
+
 def _format_vehicle(v: VehicleResult) -> str:
     """Format vehicle result as single-line summary with escaped Markdown.
 

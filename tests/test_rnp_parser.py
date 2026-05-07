@@ -192,3 +192,32 @@ class TestParseVehicle:
         assert result.valor_contrato == ""
         assert result.propietario_id == ""
         assert result.propietario_nombre == ""
+
+    def test_propietario_stops_at_wall_text(self):
+        """Test that propietario_nombre stops at RNP footer markers (wall-text issue)."""
+        html = """
+        <html><body><table><tr><td>
+        CEDULA DE IDENTIDAD 115320866 REYES CARRANZA JOSE HUMBERTO
+        No Posee Gravamen(es) No Posee Anotación(es) No Posee Infracción(es) / Colisión(es)
+        Se aclara que las consultas de las infracciones...
+        Emitido: 06-May-2026
+        </td></tr></table></body></html>
+        """
+        result = parse_vehicle(html)
+        assert result.propietario_id == "115320866"
+        assert result.propietario_nombre == "REYES CARRANZA JOSE HUMBERTO"
+        assert "No Posee" not in result.propietario_nombre
+        assert "Emitido" not in result.propietario_nombre
+
+    def test_propietario_name_capped_at_80_chars(self):
+        """Test that propietario_nombre is capped at 80 characters."""
+        html = """
+        <html><body><table><tr><td>
+        CEDULA DE IDENTIDAD 123456789 VERY LONG NAME WITH MANY WORDS THAT
+        EXCEEDS EIGHTY CHARACTERS AND SHOULD BE TRUNCATED AUTOMATICALLY
+        Emitido: 2026
+        </td></tr></table></body></html>
+        """
+        result = parse_vehicle(html)
+        assert result.propietario_id == "123456789"
+        assert len(result.propietario_nombre) <= 80

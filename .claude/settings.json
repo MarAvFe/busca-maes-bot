@@ -3,6 +3,18 @@
     "plan-spec-enforcer": {
       "enabled": true,
       "path": "hooks/plan-spec-enforcer.js"
-    }
+    },
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "if": "Bash(python3 *)|Bash(pytest *)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.command as $cmd | {\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"updatedInput\": {\"command\": (\"source /home/mavila/busca-maes-bot/.venv/bin/activate && \" + $cmd)}}}' | jq -c ."
+          }
+        ]
+      }
+    ]
   }
 }

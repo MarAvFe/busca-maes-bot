@@ -30,6 +30,13 @@ class Settings:
             int(x.strip()) for x in allowed_raw.split(",") if x.strip().isdigit()
         )
 
+        # Admin user IDs for /stats access: comma-separated Telegram user IDs.
+        # Empty = nobody allowed (fail-closed).
+        admin_raw = os.getenv("ADMIN_USER_IDS", "")
+        self.admin_user_ids: frozenset[int] = frozenset(
+            int(x.strip()) for x in admin_raw.split(",") if x.strip().isdigit()
+        )
+
         # RNP (plate search) credentials
         self.rnp_email = os.getenv("RNP_EMAIL", "")
         self.rnp_password = os.getenv("RNP_PASSWORD", "")

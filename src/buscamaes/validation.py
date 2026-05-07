@@ -41,7 +41,7 @@ def detect_plate(text: str) -> PlateQuery | None:
         return None
 
     patterns = [
-        (r"^(\d{6})$", "AUT"),
+        (r"^(\d{1,6})$", "AUT"),
         (r"^([A-Z]{3})(\d{3})$", "AUT"),
         (r"^(CL)(\d{6})$", "CL"),
         (r"^(M)(\d{6})$", "MOT"),

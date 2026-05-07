@@ -48,7 +48,7 @@ class TestPlateDetection:
             "CL 123456",
             # Invalid single word
             "abc",  # All letters
-            "12345",  # 5 digits
+            "1234567",  # 7 digits (too many)
             "M12345",  # M + 5 digits
             "MOT12345",  # MOT + 5 digits
             "CL12345",  # CL + 5 digits

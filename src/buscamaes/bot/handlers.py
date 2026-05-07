@@ -380,7 +380,10 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             return
         # If user not allowed, don't mention plate search exists
         if _plate_allowed(update.effective_user.id):
-            error_msg = "Formato no reconocido. Escribí un nombre (2+ palabras) o una placa válida. Vea /help"
+            error_msg = (
+                "Formato no reconocido. Escribí un nombre"
+                " (2+ palabras) o una placa válida. Vea /help"
+            )
         else:
             error_msg = "Escribí un nombre con al menos 2 palabras. Vea /help"
         await update.message.reply_text(error_msg)

@@ -36,14 +36,21 @@ class BreakerState(Enum):
 
 
 class RNPClient:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        email: str | None = None,
+        password: str | None = None,
+        base_url: str | None = None,
+        timeout: int | None = None,
+    ) -> None:
         self._session: httpx.AsyncClient | None = None
         self._logged_in = False
         self._lock = asyncio.Lock()
         settings = get_settings()
-        self.email = settings.rnp_email
-        self.password = settings.rnp_password
-        self.timeout = settings.rnp_timeout
+        self.email = email if email is not None else settings.rnp_email
+        self.password = password if password is not None else settings.rnp_password
+        self.base_url = base_url if base_url is not None else settings.rnp_base_url
+        self.timeout = timeout if timeout is not None else settings.rnp_timeout
         # Throttle: sliding window 120s, max 8 requests
         self._request_times: list[float] = []
         self._throttle_lock = asyncio.Lock()
@@ -149,7 +156,7 @@ class RNPClient:
 
         # Step 1: GET login page
         await self._throttle_acquire()
-        login_resp = await self._session.get(f"{BASE_URL}/shopping/login.jspx")
+        login_resp = await self._session.get(f"{self.base_url}/shopping/login.jspx")
         login_resp.raise_for_status()
         viewstate = extract_viewstate(login_resp.text)
         # Login page form may have different ID; grab the first form on the page
@@ -170,7 +177,7 @@ class RNPClient:
             f"{form_id}:j_id29": f"{form_id}:j_id29",
         }
         login_post = await self._session.post(
-            f"{BASE_URL}/shopping/login.jspx",
+            f"{self.base_url}/shopping/login.jspx",
             data=login_data,
         )
         login_post.raise_for_status()
@@ -192,7 +199,7 @@ class RNPClient:
         # Step 1: GET indiceDocumentos.jspx (navigate to free queries)
         await self._throttle_acquire()
         idx_resp = await self._session.get(
-            f"{BASE_URL}/shopping/consultaDocumentos/indiceDocumentos.jspx"
+            f"{self.base_url}/shopping/consultaDocumentos/indiceDocumentos.jspx"
         )
         idx_resp.raise_for_status()
         idx_viewstate = extract_viewstate(idx_resp.text)
@@ -208,7 +215,7 @@ class RNPClient:
             j_id335: j_id335,
         }
         nav_resp = await self._session.post(
-            f"{BASE_URL}/shopping/consultaDocumentos/indiceDocumentos.jspx",
+            f"{self.base_url}/shopping/consultaDocumentos/indiceDocumentos.jspx",
             data=nav_data,
         )
         nav_resp.raise_for_status()
@@ -216,7 +223,7 @@ class RNPClient:
         # Step 3: GET paramConsultaVehiculo.jspx
         await self._throttle_acquire()
         param_resp = await self._session.get(
-            f"{BASE_URL}/shopping/consultaDocumentos/paramConsultaVehiculo.jspx"
+            f"{self.base_url}/shopping/consultaDocumentos/paramConsultaVehiculo.jspx"
         )
         param_resp.raise_for_status()
         param_viewstate = extract_viewstate(param_resp.text)
@@ -238,7 +245,7 @@ class RNPClient:
             "error": "",
         }
         query_resp = await self._session.post(
-            f"{BASE_URL}/shopping/consultaDocumentos/paramConsultaVehiculo.jspx",
+            f"{self.base_url}/shopping/consultaDocumentos/paramConsultaVehiculo.jspx",
             data=query_data,
         )
         query_resp.raise_for_status()
@@ -246,7 +253,7 @@ class RNPClient:
         # Step 5: GET results page
         await self._throttle_acquire()
         result_resp = await self._session.get(
-            f"{BASE_URL}/shopping/consultaDocumentos/RespConsultaVehiculo.jspx"
+            f"{self.base_url}/shopping/consultaDocumentos/RespConsultaVehiculo.jspx"
         )
         result_resp.raise_for_status()
 

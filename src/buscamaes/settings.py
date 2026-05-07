@@ -23,11 +23,33 @@ class Settings:
         self.audit_db_path: str = os.getenv("AUDIT_DB_PATH", "/data/audit.db")
         self.audit_retention_days: int = int(os.getenv("AUDIT_RETENTION_DAYS", "90"))
 
+        # Plate search allowlist: comma-separated Telegram user IDs.
+        # Empty = nobody allowed (fail-closed).
+        allowed_raw = os.getenv("PLATE_ALLOWED_USER_IDS", "")
+        self.plate_allowed_user_ids: frozenset[int] = frozenset(
+            int(x.strip()) for x in allowed_raw.split(",") if x.strip().isdigit()
+        )
+
         # RNP (plate search) credentials
         self.rnp_email = os.getenv("RNP_EMAIL", "")
         self.rnp_password = os.getenv("RNP_PASSWORD", "")
         self.rnp_base_url: str = os.getenv("RNP_BASE_URL", "https://www.rnpdigital.com")
         self.rnp_timeout: int = int(os.getenv("RNP_TIMEOUT", "30"))
+
+        # RNP credential pool: comma-separated email:password pairs.
+        # If set, takes precedence over RNP_EMAIL/RNP_PASSWORD.
+        # e.g. RNP_ACCOUNTS=user1@example.com:pass1,user2@example.com:pass2
+        accounts_raw = os.getenv("RNP_ACCOUNTS", "")
+        if accounts_raw.strip():
+            pairs: list[tuple[str, str]] = []
+            for pair in accounts_raw.split(","):
+                pair = pair.strip()
+                if ":" in pair:
+                    email, password = pair.split(":", 1)
+                    pairs.append((email.strip(), password.strip()))
+            self.rnp_accounts: list[tuple[str, str]] = pairs
+        else:
+            self.rnp_accounts = [(self.rnp_email, self.rnp_password)] if self.rnp_email else []
 
 
 @lru_cache(maxsize=1)

@@ -1,3 +1,5 @@
+from math import ceil
+
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 from ..sources.rnp import VehicleResult
@@ -78,11 +80,21 @@ def _format_person(r: PersonResult) -> str:
     return "\n".join(lines) if lines else "Sin datos."
 
 
-def _build_choices_keyboard(session: SearchSession) -> InlineKeyboardMarkup:
+def _build_choices_keyboard(session: SearchSession, page: int = 0) -> InlineKeyboardMarkup:
+    start = page * MAX_CHOICES
     rows = []
-    for r in session.results[:MAX_CHOICES]:
+    for r in session.results[start : start + MAX_CHOICES]:
         label = f"{r.cedula} — {r.nombre}"
         rows.append([InlineKeyboardButton(label, callback_data=f"sel:{r.index}")])
+
+    total_pages = ceil(len(session.results) / MAX_CHOICES) if session.results else 1
+    nav = []
+    if page > 0:
+        nav.append(InlineKeyboardButton("← Anterior", callback_data=f"page:{page - 1}"))
+    if page < total_pages - 1:
+        nav.append(InlineKeyboardButton("Siguiente →", callback_data=f"page:{page + 1}"))
+    if nav:
+        rows.append(nav)
 
     footer = [
         InlineKeyboardButton("🌐 Abrir en TSE", url=TSE_SEARCH_URL),
@@ -92,7 +104,9 @@ def _build_choices_keyboard(session: SearchSession) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(rows)
 
 
-def _choices_header(session: SearchSession, nombre: str, apellido1: str, apellido2: str) -> str:
+def _choices_header(
+    session: SearchSession, nombre: str, apellido1: str, apellido2: str, page: int = 0
+) -> str:
     query = " ".join(filter(None, [nombre, apellido1, apellido2]))
     alive = len(session.results)
     total = session.total_raw
@@ -101,9 +115,23 @@ def _choices_header(session: SearchSession, nombre: str, apellido1: str, apellid
     lines = [f"*{total} resultado(s)* para *{query}*"]
     if filtered:
         lines.append(f"_{filtered} fallecido(s) ocultado(s)_")
-    shown = min(alive, MAX_CHOICES)
-    lines.append(f"\nMostrando los primeros {shown}. Seleccioná uno o refiná la búsqueda:")
+
+    total_pages = ceil(alive / MAX_CHOICES) if alive else 1
+    start = page * MAX_CHOICES + 1
+    end = min((page + 1) * MAX_CHOICES, alive)
+    if total_pages > 1:
+        lines.append(
+            f"\nMostrando {start}-{end} de {alive} (pág. {page + 1}/{total_pages}). Seleccioná uno:"
+        )
+    else:
+        lines.append(f"\nMostrando los primeros {end}. Seleccioná uno o refiná la búsqueda:")
     return "\n".join(lines)
+
+
+def _person_detail_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        [[InlineKeyboardButton("← Volver a resultados", callback_data="back")]]
+    )
 
 
 def _format_vehicle(v: VehicleResult) -> str:

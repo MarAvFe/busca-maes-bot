@@ -202,31 +202,7 @@ class RNPClient:
         if self._session is None:
             raise RuntimeError("Session not initialized")
 
-        # Step 1: GET indiceDocumentos.jspx (navigate to free queries)
-        await self._throttle_acquire()
-        idx_resp = await self._session.get(
-            f"{self.base_url}/shopping/consultaDocumentos/indiceDocumentos.jspx"
-        )
-        idx_resp.raise_for_status()
-        idx_viewstate = extract_viewstate(idx_resp.text)
-        idx_form_id = extract_form_id(idx_resp.text)
-        # Extract button ID: j_id335 is just a button name
-        j_id335 = f"{idx_form_id}:j_id335"
-
-        # Step 2: POST to navigate to vehicle query form
-        await self._throttle_acquire()
-        nav_data = {
-            f"{idx_form_id}": idx_form_id,
-            "javax.faces.ViewState": idx_viewstate,
-            j_id335: j_id335,
-        }
-        nav_resp = await self._session.post(
-            f"{self.base_url}/shopping/consultaDocumentos/indiceDocumentos.jspx",
-            data=nav_data,
-        )
-        nav_resp.raise_for_status()
-
-        # Step 3: GET paramConsultaVehiculo.jspx
+        # Step 1: GET paramConsultaVehiculo.jspx (direct — no nav step needed)
         await self._throttle_acquire()
         param_resp = await self._session.get(
             f"{self.base_url}/shopping/consultaDocumentos/paramConsultaVehiculo.jspx"
@@ -235,7 +211,7 @@ class RNPClient:
         param_viewstate = extract_viewstate(param_resp.text)
         param_argus = extract_argus(param_resp.text)
 
-        # Step 4: POST plate query
+        # Step 2: POST plate query
         await self._throttle_acquire()
         query_data = {
             "params": "params",
@@ -256,7 +232,7 @@ class RNPClient:
         )
         query_resp.raise_for_status()
 
-        # Step 5: GET results page
+        # Step 3: GET results page
         await self._throttle_acquire()
         result_resp = await self._session.get(
             f"{self.base_url}/shopping/consultaDocumentos/RespConsultaVehiculo.jspx"

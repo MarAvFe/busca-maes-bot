@@ -109,7 +109,7 @@ def parse_vehicle(html: str) -> VehicleResult:
             result.cilindrada_cc = match.group(1).replace(",", "")
 
     cedula_match = re.search(
-        r"CEDULA\s+DE\s+IDENTIDAD\s+(\d+)\s+(.+?)"
+        r"CEDULA\s+(?:DE\s+IDENTIDAD|JURIDICA)\s+(\d+)\s+(.+?)"
         r"(?=\s+(?:No Posee|Emitido|Todos los derechos|Procesando|Si Posee|"
         r"Ver Persona|Tomo)|\Z)",
         text,

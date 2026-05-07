@@ -11,25 +11,39 @@ class TestPlateDetection:
     @pytest.mark.parametrize(
         "text,expected_class,expected_number",
         [
-            # AUT: 6 digits
+            # AUT: 1–6 digits
+            ("1", "AUT", "1"),
+            ("123", "AUT", "123"),
             ("621335", "AUT", "621335"),
-            ("000000", "AUT", "000000"),
-            ("999999", "AUT", "999999"),
             # AUT: 3 letters + 3 digits
             ("BJV123", "AUT", "BJV123"),
             ("AAA000", "AUT", "AAA000"),
-            # CL: CL + 6 digits
+            # CL: CL + 1–6 digits
+            ("CL1", "CL", "1"),
+            ("CL123", "CL", "123"),
+            ("CL12345", "CL", "12345"),
             ("CL123456", "CL", "123456"),
-            ("CL000000", "CL", "000000"),
-            # MOT: M + 6 digits
+            # MOT: M + 1–6 digits
+            ("M1", "MOT", "1"),
+            ("M12345", "MOT", "12345"),
             ("M123456", "MOT", "123456"),
-            ("M000000", "MOT", "000000"),
-            # MOT: MOT + 6 digits
+            # MOT: MOT + 1–6 digits
+            ("MOT1", "MOT", "1"),
+            ("MOT12345", "MOT", "12345"),
             ("MOT621335", "MOT", "621335"),
-            ("MOT000000", "MOT", "000000"),
             # MOT: M + 3 digits + 3 letters
             ("M123ABC", "MOT", "123ABC"),
-            ("M000ZZZ", "MOT", "000ZZZ"),
+            # Taxis
+            ("TSJ1234", "TSJ", "1234"),
+            ("TSJ123456", "TSJ", "123456"),
+            ("TAX123", "TAX", "123"),
+            ("TA99", "TA", "99"),
+            ("TC1", "TC", "1"),
+            ("TG12345", "TG", "12345"),
+            ("TH123456", "TH", "123456"),
+            ("TL1", "TL", "1"),
+            ("TP99", "TP", "99"),
+            ("TE12345", "TE", "12345"),
         ],
     )
     def test_valid_plate_formats(self, text, expected_class, expected_number):
@@ -49,10 +63,7 @@ class TestPlateDetection:
             # Invalid single word
             "abc",  # All letters
             "1234567",  # 7 digits (too many)
-            "M12345",  # M + 5 digits
-            "MOT12345",  # MOT + 5 digits
-            "CL12345",  # CL + 5 digits
-            "M123AB",  # M + 3 digits + 2 letters
+            "M123AB",  # M + 3 digits + 2 letters (not 3)
             "XYZ12",  # 3 letters + 2 digits (not 3)
             # Empty/whitespace
             "",

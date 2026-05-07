@@ -180,6 +180,19 @@ class TestParseVehicle:
         assert result.propietario_id == "987654321"
         assert result.propietario_nombre == "LUIS GOMEZ SANTOS"
 
+    def test_handles_cedula_juridica_owner(self):
+        """Test propietario parsing when owner is a corporate entity (CEDULA JURIDICA)."""
+        html = (
+            "<html><body><table><tr><td>"
+            "Marca: VOLVO Estilo: S40 2.4 Categoría: AUTOMOVIL Año Fabricación: 2007 "
+            "CEDULA JURIDICA 3102901366 DESARROLLOS MAVIF SOCIEDAD DE RESPONSABILIDAD LIMITADA "
+            "No Posee Gravamen(es)"
+            "</td></tr></table></body></html>"
+        )
+        result = parse_vehicle(html)
+        assert result.propietario_id == "3102901366"
+        assert result.propietario_nombre == "DESARROLLOS MAVIF SOCIEDAD DE RESPONSABILIDAD LIMITADA"
+
     def test_handles_empty_html(self):
         """Test that empty HTML returns empty VehicleResult."""
         html = "<html><body></body></html>"

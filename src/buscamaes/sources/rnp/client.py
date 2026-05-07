@@ -216,7 +216,7 @@ class RNPClient:
         query_data = {
             "params": "params",
             "params:j_id273": "PLA",
-            "class": class_code,
+            "class": " " if class_code == "AUT" else class_code,
             "code": " ",
             "carNumber": car_number,
             "params:argus": param_argus,

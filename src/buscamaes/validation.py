@@ -42,10 +42,13 @@ def detect_plate(text: str) -> PlateQuery | None:
 
     patterns = [
         (r"^(\d{1,6})$", "AUT"),
+        # Specific prefixes before generic 3-letter AUT to avoid collision (e.g. TAX123)
+        (r"^(TSJ|TAX)(\d{1,6})$", None),
+        (r"^(TA|TC|TG|TH|TL|TP|TE)(\d{1,6})$", None),
         (r"^([A-Z]{3})(\d{3})$", "AUT"),
-        (r"^(CL)(\d{6})$", "CL"),
-        (r"^(M)(\d{6})$", "MOT"),
-        (r"^(MOT)(\d{6})$", "MOT"),
+        (r"^(CL)(\d{1,6})$", "CL"),
+        (r"^(M)(\d{1,6})$", "MOT"),
+        (r"^(MOT)(\d{1,6})$", "MOT"),
         (r"^(M)(\d{3})([A-Z]{3})$", "MOT"),
     ]
 
@@ -57,8 +60,10 @@ def detect_plate(text: str) -> PlateQuery | None:
                 car_number = groups[0]
             elif class_code == "AUT":
                 car_number = groups[0] + groups[1]
-            elif class_code in ("CL", "MOT"):
-                car_number = "".join(groups[1:])
+            elif class_code is None:
+                # Prefix is its own class code (e.g. taxis: TSJ, TA, TC…)
+                class_code = groups[0]
+                car_number = groups[1]
             else:
                 car_number = "".join(groups[1:])
             return PlateQuery(class_code=class_code, car_number=car_number, raw=text)

@@ -142,7 +142,11 @@ def _truncate_for_telegram(text: str, limit: int = 4000) -> str:
 
 
 def _format_vehicle(v: VehicleResult) -> str:
-    """Format vehicle result as single-line summary with escaped Markdown."""
+    """Format vehicle result as single-line summary with escaped Markdown.
+
+    Example: *MOT 621335* · MOTOCICLETA HONDA XR 150 L (2018) · 149 cc ·
+    ₡ 1,100,000.00 · (110350386) ABARCA MORALES JUAN ELIAS
+    """
     parts = []
     if v.placa:
         parts.append(f"*{v.placa}*")

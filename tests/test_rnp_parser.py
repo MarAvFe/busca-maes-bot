@@ -90,88 +90,105 @@ class TestExtractArgus:
 
 
 class TestParseVehicle:
-    def test_parses_vehicle_with_all_fields(self):
+    @pytest.fixture
+    def mot621335_html(self):
+        """Real MOT 621335 vehicle result structure (mashed-text format)."""
+        return (
+            "<html><body><table><tr><td>Tomo: 2018 Asiento: 00001206 "
+            "Secuencia: 001 Fecha: 12-ene-2018 Marca: HONDA Estilo: XR 150 L "
+            "Categoría: MOTOCICLETA Capacidad: 2 personas # de Serie: "
+            "LTMKD0799J5202247 Peso Vacio: 0.00 KG Carroceria: MOTOCICLETA "
+            "Peso Neto: 118.00 KG Tracción: 2X2 PBV (Fabricante): 153.00 KG "
+            "# de Chasis: LTMKD0799J5202247 Valor Hacienda (verificar "
+            "actualización en el marchamo): 470,000.00 Año Fabricación: 2018 "
+            "Estado Actual: INSCRITO Longitud: 0.00 mts. Estado Tributario: "
+            "PAGO DERECHOS DE ADUANA Cabina: NO APLICA Clase Tributaria: "
+            "2879304 Techo: NO APLICA Uso: PARTICULAR Peso Remolque: 0.00 KG "
+            "Valor Contrato: 1,100,000.00 Color: ROJO Numero registral: 0 "
+            "Convertido: N Moneda: COLONES # de VIN: LTMKD0799J5202247 "
+            "N.Motor:KD07E2210361 Marca:HONDA # de Serie:NO INDICADO "
+            "Modelo:XR 150 L Cilindrada:149 C.C Cilindros:1 Potencia:9 KW "
+            "Combustible:GASOLINA Fabricante:NO INDICADO Procedencia:DESCONOCIDA "
+            "N.Motor: KD07E2210361 Marca: HONDA # de Serie: NO INDICADO "
+            "Modelo: XR 150 L Cilindrada: 149 C.C Cilindros: 1 Potencia: 9 KW "
+            "Combustible: GASOLINA Fabricante: NO INDICADO Procedencia: "
+            "DESCONOCIDA Ver Persona CEDULA DE IDENTIDAD 110350386 ABARCA "
+            "MORALES JUAN ELIAS Tomo: 2018 Asiento: 00001206 Secuencia: 001"
+            "</td></tr></table></body></html>"
+        )
+
+    def test_parses_mot621335_correctly(self, mot621335_html):
+        """Test parsing of real MOT 621335 plate with mashed-text structure."""
+        result = parse_vehicle(mot621335_html)
+        assert result.marca == "HONDA", f"Expected 'HONDA', got '{result.marca}'"
+        assert result.estilo == "XR 150 L", f"Expected 'XR 150 L', got '{result.estilo}'"
+        assert result.categoria == "MOTOCICLETA", (
+            f"Expected 'MOTOCICLETA', got '{result.categoria}'"
+        )
+        assert result.año_fabricacion == "2018", f"Expected '2018', got '{result.año_fabricacion}'"
+        assert result.cilindrada_cc == "149", f"Expected '149', got '{result.cilindrada_cc}'"
+        assert result.valor_contrato == "1,100,000.00", (
+            f"Expected '1,100,000.00', got '{result.valor_contrato}'"
+        )
+        assert result.propietario_id == "110350386", (
+            f"Expected '110350386', got '{result.propietario_id}'"
+        )
+        assert result.propietario_nombre == "ABARCA MORALES JUAN ELIAS", (
+            f"Expected 'ABARCA MORALES JUAN ELIAS', got '{result.propietario_nombre}'"
+        )
+
+    def test_skips_no_indicado_fields(self):
+        """Test that NO INDICADO values are skipped (empty string)."""
         html = """
-        <table>
-        <tr>
-            <td>Placa</td>
-            <td>BJV 123</td>
-        </tr>
-        <tr>
-            <td>Marca</td>
-            <td>TOYOTA</td>
-        </tr>
-        <tr>
-            <td>Estilo</td>
-            <td>COROLLA</td>
-        </tr>
-        <tr>
-            <td>Categoría</td>
-            <td>Automóvil Particular</td>
-        </tr>
-        <tr>
-            <td>Año Fabricación</td>
-            <td>2020</td>
-        </tr>
-        <tr>
-            <td>Motor</td>
-            <td>1600 c.c.</td>
-        </tr>
-        <tr>
-            <td>Valor Contrato</td>
-            <td>5,000,000</td>
-        </tr>
-        <tr>
-            <td>Propietario</td>
-            <td>CEDULA 110350386 — JUAN MORA</td>
-        </tr>
-        </table>
+        <html><body>
+        <table><tr><td>
+        Marca: NO INDICADO Estilo: Honda Civic Categoría: NO INDICADO
+        Año Fabricación: 2020 Valor Contrato: NO INDICADO
+        </td></tr></table>
+        </body></html>
         """
         result = parse_vehicle(html)
-        assert result.placa == "BJV 123"
-        assert result.marca == "TOYOTA"
-        assert result.estilo == "COROLLA"
-        assert result.categoria == "Automóvil Particular"
-        assert result.año_fabricacion == "2020"
+        assert result.marca == "", "Marca should be empty for NO INDICADO"
+        assert result.estilo == "Honda Civic", "Estilo should be extracted"
+        assert result.categoria == "", "Categoría should be empty for NO INDICADO"
+        assert result.año_fabricacion == "2020", "Año Fabricación should be extracted"
+        assert result.valor_contrato == "", "Valor Contrato should be empty for NO INDICADO"
+
+    def test_extracts_cilindrada_from_cilindrada_field(self):
+        """Test cilindrada extraction when N.Motor is not available."""
+        html = """
+        <html><body>
+        <table><tr><td>
+        Marca: TOYOTA Cilindrada: 1600 C.C
+        </td></tr></table>
+        </body></html>
+        """
+        result = parse_vehicle(html)
         assert result.cilindrada_cc == "1600"
-        assert result.valor_contrato == "5,000,000"
-        assert result.propietario_id == "110350386"
-        assert result.propietario_nombre == "JUAN MORA"
 
-    def test_parses_vehicle_with_partial_fields(self):
+    def test_handles_propietario_format(self):
+        """Test propietario cedula + name parsing from CEDULA DE IDENTIDAD format."""
         html = """
-        <table>
-        <tr>
-            <td>Placa</td>
-            <td>ABC 123</td>
-        </tr>
-        <tr>
-            <td>Marca</td>
-            <td>HONDA</td>
-        </tr>
-        </table>
+        <html><body>
+        <table><tr><td>
+        Marca: FORD Ver Persona CEDULA DE IDENTIDAD 987654321 LUIS GOMEZ SANTOS
+        Tomo: 2019
+        </td></tr></table>
+        </body></html>
         """
         result = parse_vehicle(html)
-        assert result.placa == "ABC 123"
-        assert result.marca == "HONDA"
-        assert result.estilo == ""
-        assert result.cilindrada_cc == ""
-
-    def test_handles_propietario_without_cedula_format(self):
-        html = """
-        <table>
-        <tr>
-            <td>Propietario</td>
-            <td>UNKNOWN OWNER</td>
-        </tr>
-        </table>
-        """
-        result = parse_vehicle(html)
-        assert result.propietario_id == "UNKNOWN OWNER"
-        assert result.propietario_nombre == ""
+        assert result.propietario_id == "987654321"
+        assert result.propietario_nombre == "LUIS GOMEZ SANTOS"
 
     def test_handles_empty_html(self):
+        """Test that empty HTML returns empty VehicleResult."""
         html = "<html><body></body></html>"
         result = parse_vehicle(html)
-        assert result.placa == ""
         assert result.marca == ""
+        assert result.estilo == ""
+        assert result.categoria == ""
+        assert result.año_fabricacion == ""
+        assert result.cilindrada_cc == ""
+        assert result.valor_contrato == ""
+        assert result.propietario_id == ""
+        assert result.propietario_nombre == ""

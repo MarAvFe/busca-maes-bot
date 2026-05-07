@@ -41,45 +41,82 @@ def extract_argus(html: str) -> str:
 def parse_vehicle(html: str) -> VehicleResult:
     soup = BeautifulSoup(html, "lxml")
     result = VehicleResult()
-    text_map: dict[str, str] = {}
+    text = soup.get_text(separator=" ", strip=True)
 
-    for row in soup.find_all("tr"):
-        cells = row.find_all("td")
-        if len(cells) >= 2:
-            label = cells[0].get_text(strip=True).lower()
-            value = " ".join(c.get_text(strip=True) for c in cells[1:]).strip()
-            if label and value:
-                text_map[label] = value
-
-    mapping = {
-        "placa": "placa",
-        "marca": "marca",
-        "estilo": "estilo",
-        "categoría": "categoria",
-        "año fabricación": "año_fabricacion",
-        "valor contrato": "valor_contrato",
+    known_labels = {
+        "Tomo",
+        "Asiento",
+        "Secuencia",
+        "Fecha",
+        "Marca",
+        "Estilo",
+        "Categoría",
+        "Capacidad",
+        "# de Serie",
+        "# de VIN",
+        "# de Chasis",
+        "Peso Vacio",
+        "Peso Neto",
+        "Carroceria",
+        "Tracción",
+        "PBV",
+        "Longitud",
+        "Año Fabricación",
+        "Estado Actual",
+        "Estado Tributario",
+        "Clase Tributaria",
+        "Uso",
+        "Peso Remolque",
+        "Valor Contrato",
+        "Valor Hacienda",
+        "Color",
+        "Convertido",
+        "Moneda",
+        "N.Motor",
+        "Modelo",
+        "Cilindrada",
+        "Cilindros",
+        "Potencia",
+        "Combustible",
+        "Fabricante",
+        "Procedencia",
+        "Cabina",
+        "Techo",
+        "Numero registral",
     }
 
-    for label_pattern, field_name in mapping.items():
-        for html_label, value in text_map.items():
-            if label_pattern in html_label:
-                if value.upper() != "NO INDICADO":
-                    setattr(result, field_name, value)
-                break
-
-    motor_value = next((v for k, v in text_map.items() if "motor" in k), "")
-    if motor_value:
-        match = re.search(r"(\d+)\s*c\.c\.", motor_value, re.IGNORECASE)
+    def extract_field(label: str, max_length: int = 50) -> str:
+        label_escaped = re.escape(label)
+        lookahead = "|".join(
+            re.escape(lb) for lb in known_labels if lb != label
+        )
+        pattern = rf"{label_escaped}:\s*(.+?)(?={lookahead}:\s|$)"
+        match = re.search(pattern, text, re.IGNORECASE)
         if match:
-            result.cilindrada_cc = match.group(1)
+            value = match.group(1).strip()
+            if value.upper() != "NO INDICADO":
+                return value[:max_length]
+        return ""
 
-    prop_text = next((v for k, v in text_map.items() if "propietario" in k), "")
-    if prop_text and prop_text.upper() != "NO INDICADO":
-        prop_match = re.search(r"cedula\s+(\d+)\s*[—-]?\s*(.*)", prop_text, re.IGNORECASE)
-        if prop_match:
-            result.propietario_id = prop_match.group(1)
-            result.propietario_nombre = prop_match.group(2).strip()
-        else:
-            result.propietario_id = prop_text
+    result.marca = extract_field("Marca")
+    result.estilo = extract_field("Estilo", max_length=50)
+    result.categoria = extract_field("Categoría", max_length=50)
+    result.año_fabricacion = extract_field("Año Fabricación")
+    result.valor_contrato = extract_field("Valor Contrato", max_length=20)
+
+    cilindrada_text = extract_field("Cilindrada", max_length=10)
+    if cilindrada_text:
+        match = re.search(r"([\d,]+(?:\.\d+)?)\s*", cilindrada_text)
+        if match:
+            result.cilindrada_cc = match.group(1).replace(",", "")
+
+    cedula_match = re.search(
+        r"CEDULA\s+DE\s+IDENTIDAD\s+(\d+)\s+(.+?)(?=\s+Tomo:|\s+Ver Persona|\Z)",
+        text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if cedula_match:
+        result.propietario_id = cedula_match.group(1)
+        result.propietario_nombre = cedula_match.group(2).strip()
 
     return result

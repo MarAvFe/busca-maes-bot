@@ -52,6 +52,28 @@ class TestExtractFormId:
         result = extract_form_id(html, anchor="params")
         assert result == "PARAMS_form"
 
+    def test_finds_form_by_contains(self):
+        html = """
+        <form id="form1">
+            <input name="field1">
+        </form>
+        <form id="form2">
+            <input name="jid7e05f2:correo">
+            <input name="jid7e05f2:pass">
+        </form>
+        """
+        result = extract_form_id(html, contains=":correo")
+        assert result == "form2"
+
+    def test_raises_when_contains_not_found(self):
+        html = """
+        <form id="form1">
+            <input name="field1">
+        </form>
+        """
+        with pytest.raises(ValueError, match="Form containing input"):
+            extract_form_id(html, contains=":correo")
+
 
 class TestExtractArgus:
     def test_extracts_argus_token(self):

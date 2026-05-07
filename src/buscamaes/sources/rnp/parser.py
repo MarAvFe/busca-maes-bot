@@ -13,16 +13,20 @@ def extract_viewstate(html: str) -> str:
     raise ValueError("ViewState not found in HTML")
 
 
-def extract_form_id(html: str, anchor: str = "params") -> str:
+def extract_form_id(html: str, anchor: str = "params", contains: str | None = None) -> str:
     soup = BeautifulSoup(html, "lxml")
     for form in soup.find_all("form"):
         form_id = form.get("id")
-        if form_id:
-            if anchor and anchor in form_id.lower():
+        if not form_id:
+            continue
+        if contains:
+            inp = form.find("input", {"name": lambda x: x and contains in x})
+            if inp:
                 return str(form_id)
-            elif not anchor:
-                # No anchor specified; return first form found
-                return str(form_id)
+        elif (anchor and anchor in form_id.lower()) or not anchor:
+            return str(form_id)
+    if contains:
+        raise ValueError(f"Form containing input '{contains}' not found")
     raise ValueError(f"Form with anchor '{anchor}' not found")
 
 

@@ -145,7 +145,7 @@ class RNPClient:
 
     def _looks_like_login_page(self, resp: httpx.Response) -> bool:
         """Detect if response is a login page (expiry or forced re-auth)."""
-        if resp.url.path.endswith("login.jspx"):
+        if "login.jspx" in resp.url.path:
             return True
         return "correo" in resp.text.lower() and "pass" in resp.text.lower()
 
@@ -159,9 +159,7 @@ class RNPClient:
         login_resp = await self._session.get(f"{self.base_url}/shopping/login.jspx")
         login_resp.raise_for_status()
         viewstate = extract_viewstate(login_resp.text)
-        # Login page form may have different ID; grab the first form on the page
-        form_id = extract_form_id(login_resp.text, anchor="")
-        # Extract j_id21 anti-bot hidden field from form
+        form_id = extract_form_id(login_resp.text, contains=":correo")
         j_id21_match = re.search(f'{form_id}:j_id21" [^>]*value="([^"]*)"', login_resp.text)
         j_id21 = j_id21_match.group(1) if j_id21_match else ""
 
@@ -182,14 +180,18 @@ class RNPClient:
         )
         login_post.raise_for_status()
 
-        # Check if login succeeded: any TSf* Tomcat auth cookie present (name varies by deployment)
-        has_auth_cookie = any(k.startswith("TSf") for k in self._session.cookies)
-        if not has_auth_cookie:
-            if "Datos incorrectos" in login_post.text:
-                raise RuntimeError("invalid credentials")
-            logger.warning(
-                "Login failed — no TSf* cookie. Present: %s", list(self._session.cookies.keys())
-            )
+        if "Datos incorrectos" in login_post.text:
+            raise RuntimeError("invalid credentials")
+
+        # Step 3: Probe protected page to verify login succeeded (only behavioural truth)
+        await self._throttle_acquire()
+        probe_resp = await self._session.get(
+            f"{self.base_url}/shopping/consultaDocumentos/indiceDocumentos.jspx"
+        )
+        probe_resp.raise_for_status()
+
+        if self._looks_like_login_page(probe_resp):
+            logger.warning("Login failed — probe redirected to login page")
             raise RuntimeError("login blocked")
 
         self._logged_in = True

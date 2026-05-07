@@ -7,6 +7,18 @@ import pytest
 from buscamaes.sources.rnp import RNPClient, get_rnp_client, reset_rnp_client
 
 
+@pytest.fixture(autouse=True)
+def _setup_env(monkeypatch):
+    """Set up required env vars for RNPClient initialization."""
+    monkeypatch.setenv("BOT_TOKEN", "test_token")
+    monkeypatch.setenv("RNP_EMAIL", "test@example.com")
+    monkeypatch.setenv("RNP_PASSWORD", "testpass")
+    from buscamaes.settings import get_settings
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
+
+
 class TestRNPClientLoginDetection:
     """Test login success/failure detection logic."""
 
@@ -15,6 +27,13 @@ class TestRNPClientLoginDetection:
         client = RNPClient()
         resp = MagicMock()
         resp.url.path = "/shopping/login.jspx"
+        assert client._looks_like_login_page(resp) is True
+
+    def test_looks_like_login_page_by_url_with_jsessionid(self):
+        """Test login page detection with jsessionid suffix in path."""
+        client = RNPClient()
+        resp = MagicMock()
+        resp.url.path = "/shopping/login.jspx;jsessionid=SA4Avw74caKbu"
         assert client._looks_like_login_page(resp) is True
 
     def test_looks_like_login_page_by_content(self):

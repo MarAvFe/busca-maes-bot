@@ -134,6 +134,13 @@ def _person_detail_keyboard() -> InlineKeyboardMarkup:
     )
 
 
+def _truncate_for_telegram(text: str, limit: int = 4000) -> str:
+    """Truncate text to fit Telegram's message size limit."""
+    if len(text) <= limit:
+        return text
+    return text[: limit - 1] + "…"
+
+
 def _format_vehicle(v: VehicleResult) -> str:
     """Format vehicle result as single-line summary with escaped Markdown."""
     parts = []

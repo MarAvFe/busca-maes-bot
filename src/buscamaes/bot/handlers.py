@@ -21,6 +21,7 @@ from .formatting import (
     _format_vehicle,
     _parse_name_input_with_fallbacks,
     _person_detail_keyboard,
+    _truncate_for_telegram,
 )
 
 logger = logging.getLogger(__name__)
@@ -307,7 +308,7 @@ async def _do_plate_search(update: Update, plate_query) -> None:
             )
             return
 
-        await msg.edit_text(_format_vehicle(vehicle), parse_mode="Markdown")
+        await msg.edit_text(_truncate_for_telegram(_format_vehicle(vehicle)), parse_mode="Markdown")
         await record_audit(
             user_id=user_id,
             action="plate_search",

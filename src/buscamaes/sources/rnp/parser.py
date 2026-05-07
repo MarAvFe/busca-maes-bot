@@ -41,9 +41,8 @@ def extract_argus(html: str) -> str:
 def parse_vehicle(html: str) -> VehicleResult:
     soup = BeautifulSoup(html, "lxml")
     result = VehicleResult()
-
-    # Row-driven extraction: first cell is label, remaining cells are value
     text_map: dict[str, str] = {}
+
     for row in soup.find_all("tr"):
         cells = row.find_all("td")
         if len(cells) >= 2:
@@ -64,19 +63,18 @@ def parse_vehicle(html: str) -> VehicleResult:
     for label_pattern, field_name in mapping.items():
         for html_label, value in text_map.items():
             if label_pattern in html_label:
-                setattr(result, field_name, value)
+                if value.upper() != "NO INDICADO":
+                    setattr(result, field_name, value)
                 break
 
-    # Extract cilindrada from motor string if present
     motor_value = next((v for k, v in text_map.items() if "motor" in k), "")
     if motor_value:
         match = re.search(r"(\d+)\s*c\.c\.", motor_value, re.IGNORECASE)
         if match:
             result.cilindrada_cc = match.group(1)
 
-    # Extract propietario ID and name from text like "CEDULA 110350386 — NOMBRE"
     prop_text = next((v for k, v in text_map.items() if "propietario" in k), "")
-    if prop_text:
+    if prop_text and prop_text.upper() != "NO INDICADO":
         prop_match = re.search(r"cedula\s+(\d+)\s*[—-]?\s*(.*)", prop_text, re.IGNORECASE)
         if prop_match:
             result.propietario_id = prop_match.group(1)
